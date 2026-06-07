@@ -6,6 +6,7 @@ import { buildCalendarGrid, type CalendarBooking } from '@/lib/calendar/utils'
 import { DayCell } from './DayCell'
 import { BookingDetailModal } from './BookingDetailModal'
 import { DayDetailPanel } from './DayDetailPanel'
+import { BookingForm } from '@/components/booking/BookingForm'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import type { UserRole } from '@/lib/supabase/types'
 
@@ -23,23 +24,47 @@ interface Props {
   userName: string
 }
 
+type PanelMode = 'day' | 'booking' | null
+
 const DAY_HEADERS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
 export function CalendarClient({ bookings, rooms, role, userName }: Props) {
   const [current, setCurrent] = useState(new Date())
   const [selectedBooking, setSelectedBooking] = useState<CalendarBooking | null>(null)
   const [selectedDay, setSelectedDay] = useState<Date | null>(null)
+  const [panelMode, setPanelMode] = useState<PanelMode>(null)
   const panelRef = useRef<HTMLDivElement>(null)
-
-  function handleDayClick(date: Date) {
-    setSelectedDay(prev => prev?.toDateString() === date.toDateString() ? null : date)
-    setTimeout(() => panelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50)
-  }
 
   const showRoomDetail = role === 'papa' || role === 'principal'
   const year = current.getFullYear()
   const month = current.getMonth()
   const days = buildCalendarGrid(year, month, bookings)
+
+  function scrollToPanel() {
+    setTimeout(() => panelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50)
+  }
+
+  function handleDayClick(date: Date) {
+    const same = selectedDay?.toDateString() === date.toDateString() && panelMode === 'day'
+    if (same) {
+      setPanelMode(null)
+      setSelectedDay(null)
+    } else {
+      setSelectedDay(date)
+      setPanelMode('day')
+      scrollToPanel()
+    }
+  }
+
+  function openBookingForm() {
+    setPanelMode('booking')
+    scrollToPanel()
+  }
+
+  function closePanel() {
+    setPanelMode(null)
+    setSelectedDay(null)
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
@@ -51,12 +76,12 @@ export function CalendarClient({ bookings, rooms, role, userName }: Props) {
         </div>
         <div className="flex items-center gap-2">
           {showRoomDetail && (
-            <a
-              href="/book"
+            <button
+              onClick={openBookingForm}
               className="text-sm bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition-colors"
             >
               + Request
-            </a>
+            </button>
           )}
           {role !== 'viewer' && (
             <a href="/admin" className="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 px-2 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
@@ -68,7 +93,7 @@ export function CalendarClient({ bookings, rooms, role, userName }: Props) {
       </header>
 
       {/* Calendar nav */}
-      <div className="max-w-5xl mx-auto px-4 pt-6">
+      <div className="max-w-5xl mx-auto px-4 pt-6 pb-10">
         <div className="flex items-center justify-between mb-4">
           <button
             onClick={() => setCurrent(d => subMonths(d, 1))}
@@ -128,7 +153,7 @@ export function CalendarClient({ bookings, rooms, role, userName }: Props) {
                 showRoomDetail={showRoomDetail}
                 onBookingClick={setSelectedBooking}
                 onDayClick={handleDayClick}
-                selected={selectedDay?.toDateString() === day.date.toDateString()}
+                selected={selectedDay?.toDateString() === day.date.toDateString() && panelMode === 'day'}
               />
             ))}
           </div>
@@ -140,15 +165,22 @@ export function CalendarClient({ bookings, rooms, role, userName }: Props) {
           </p>
         )}
 
+        {/* Below-calendar panel */}
         <div ref={panelRef}>
-          {selectedDay && (
+          {panelMode === 'day' && selectedDay && (
             <DayDetailPanel
               date={selectedDay}
               bookings={bookings}
               rooms={rooms}
               showRoomDetail={showRoomDetail}
-              onClose={() => setSelectedDay(null)}
+              onClose={closePanel}
+              onRequestStay={showRoomDetail ? openBookingForm : undefined}
             />
+          )}
+          {panelMode === 'booking' && (
+            <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm mt-4 overflow-hidden">
+              <BookingForm inline onClose={closePanel} />
+            </div>
           )}
         </div>
       </div>

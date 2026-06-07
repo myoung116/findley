@@ -13,10 +13,11 @@ interface Props {
   rooms: Room[]
   showRoomDetail: boolean
   onClose: () => void
+  onRequestStay?: () => void
 }
 
 
-export function DayDetailPanel({ date, bookings, rooms, showRoomDetail, onClose }: Props) {
+export function DayDetailPanel({ date, bookings, rooms, showRoomDetail, onClose, onRequestStay }: Props) {
   const dayBookings = bookings.filter(b => {
     const start = parseISO(b.startDate)
     const end = parseISO(b.endDate)
@@ -124,6 +125,15 @@ export function DayDetailPanel({ date, bookings, rooms, showRoomDetail, onClose 
                 })}
               </div>
             </div>
+          )}
+
+          {onRequestStay && (
+            <button
+              onClick={onRequestStay}
+              className="w-full text-sm bg-blue-600 text-white rounded-xl py-2 hover:bg-blue-700 transition-colors font-medium"
+            >
+              + Request a Stay
+            </button>
           )}
 
           <button
