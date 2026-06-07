@@ -7,8 +7,10 @@ import { DayCell } from './DayCell'
 import { BookingDetailModal } from './BookingDetailModal'
 import { DayDetailPanel } from './DayDetailPanel'
 import { BookingForm } from '@/components/booking/BookingForm'
+import { FamilyDashboard } from './FamilyDashboard'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import type { UserRole } from '@/lib/supabase/types'
+import type { DashboardStats } from '@/app/page'
 
 interface Room {
   id: string
@@ -22,13 +24,15 @@ interface Props {
   rooms: Room[]
   role: UserRole
   userName: string
+  familyBranch: string
+  dashboard: DashboardStats
 }
 
 type PanelMode = 'day' | 'booking' | null
 
 const DAY_HEADERS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
-export function CalendarClient({ bookings, rooms, role, userName }: Props) {
+export function CalendarClient({ bookings, rooms, role, userName, familyBranch, dashboard }: Props) {
   const [current, setCurrent] = useState(new Date())
   const [selectedBooking, setSelectedBooking] = useState<CalendarBooking | null>(null)
   const [selectedDay, setSelectedDay] = useState<Date | null>(null)
@@ -183,6 +187,13 @@ export function CalendarClient({ bookings, rooms, role, userName }: Props) {
             </div>
           )}
         </div>
+
+        <FamilyDashboard
+          userName={userName}
+          familyBranch={familyBranch}
+          stats={dashboard}
+          showWaiver={role === 'principal' || role === 'papa'}
+        />
       </div>
 
       <BookingDetailModal
