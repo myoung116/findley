@@ -1,3 +1,4 @@
+﻿
 export type Json =
   | string
   | number
@@ -345,7 +346,7 @@ export type Database = {
         | "waiver_bump"
         | "booking_confirmed"
       season_type: "peak" | "offseason"
-      user_role: "papa" | "principal" | "viewer"
+      user_role: "papa" | "principal" | "viewer" | "admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -498,7 +499,8 @@ export const Constants = {
         "booking_confirmed",
       ],
       season_type: ["peak", "offseason"],
-      user_role: ["papa", "principal", "viewer"],
+      user_role: ["papa", "principal", "viewer", "admin"],
     },
   },
 } as const
+

@@ -5,12 +5,18 @@ import { differenceInDays, parseISO, subMonths } from 'date-fns'
 import type { UserRole, BookingType, BookingStatus } from '@/lib/supabase/types'
 import type { CalendarBooking } from '@/lib/calendar/utils'
 
+export type ExclusiveUsage = {
+  peakUsed: number      // max 1 per calendar year
+  offseasonUsed: number // max 2 per season
+}
+
 export type DashboardStats = {
   totalNights: number
   totalVisits: number
   ttmNights: number
   ttmVisits: number
   waiverScore: number | null
+  exclusiveUsage: ExclusiveUsage
   upcomingBookings: DashboardBooking[]
   pastBookings: DashboardBooking[]
 }
@@ -98,6 +104,30 @@ export default async function HomePage() {
   const ttmNights = ttm.reduce((s, b) => s + nights(b), 0)
   const ttmVisits = ttm.length
 
+  // Exclusive usage counters for principals
+  const currentYear = today.getFullYear()
+  const { count: peakUsed } = await supabase
+    .from('bookings')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', user.id)
+    .eq('booking_type', 'exclusive_peak')
+    .in('status', ['draft', 'pending', 'confirmed'])
+    .gte('start_date', `${currentYear}-01-01`)
+    .lte('start_date', `${currentYear}-12-31`)
+
+  // Off-season season runs Sep–May; season year = Sep year
+  const seasonYear = today.getMonth() >= 8 ? currentYear : currentYear - 1
+  const { count: offseasonUsed } = await supabase
+    .from('bookings')
+    .select('id', { count: 'exact', head: true })
+    .eq('user_id', user.id)
+    .eq('booking_type', 'exclusive_offseason')
+    .in('status', ['draft', 'pending', 'confirmed'])
+    .gte('start_date', `${seasonYear}-09-01`)
+    .lte('start_date', `${seasonYear + 1}-05-31`)
+
+  const exclusiveUsage: ExclusiveUsage = { peakUsed: peakUsed ?? 0, offseasonUsed: offseasonUsed ?? 0 }
+
   // Latest waiver score
   const { data: scoreRow } = await supabase
     .from('waiver_scores')
@@ -119,7 +149,7 @@ export default async function HomePage() {
     .slice(0, 8)
     .map(b => ({ id: b.id, startDate: b.start_date, endDate: b.end_date, bookingType: b.booking_type, status: b.status, nights: nights(b), guestCount: b.guest_count }))
 
-  const dashboard: DashboardStats = { totalNights, totalVisits, ttmNights, ttmVisits, waiverScore, upcomingBookings: upcoming, pastBookings: past }
+  const dashboard: DashboardStats = { totalNights, totalVisits, ttmNights, ttmVisits, waiverScore, exclusiveUsage, upcomingBookings: upcoming, pastBookings: past }
 
   return (
     <CalendarClient

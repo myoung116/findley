@@ -3,10 +3,10 @@ import { NextResponse, type NextRequest } from 'next/server'
 import type { UserRole } from '@/lib/supabase/types'
 
 const ROLE_REQUIRED: Record<string, UserRole[]> = {
-  '/book':      ['papa', 'principal'],
-  '/admin':     ['papa', 'principal'],
-  '/optimizer': ['papa', 'principal'],
-  '/profile':   ['papa', 'principal', 'viewer'],
+  '/book':      ['admin', 'papa', 'principal'],
+  '/admin':     ['admin', 'papa', 'principal'],
+  '/optimizer': ['admin', 'papa', 'principal'],
+  '/profile':   ['admin', 'papa', 'principal', 'viewer'],
 }
 
 export async function middleware(request: NextRequest) {

@@ -11,6 +11,7 @@ interface Props {
   familyBranch: string
   stats: DashboardStats
   showWaiver: boolean
+  showExclusive?: boolean
 }
 
 const STATUS_COLORS: Record<string, string> = {
@@ -19,8 +20,8 @@ const STATUS_COLORS: Record<string, string> = {
   draft:     'text-slate-500 bg-slate-100 dark:bg-slate-700 dark:text-slate-400',
 }
 
-export function FamilyDashboard({ userName, familyBranch, stats, showWaiver }: Props) {
-  const { totalNights, totalVisits, ttmNights, ttmVisits, waiverScore, upcomingBookings, pastBookings } = stats
+export function FamilyDashboard({ userName, familyBranch, stats, showWaiver, showExclusive }: Props) {
+  const { totalNights, totalVisits, ttmNights, ttmVisits, waiverScore, exclusiveUsage, upcomingBookings, pastBookings } = stats
   const [managing, setManaging] = useState<ManageableBooking | null>(null)
 
   return (
@@ -39,6 +40,27 @@ export function FamilyDashboard({ userName, familyBranch, stats, showWaiver }: P
           <StatCell label="Nights (12 mo)" value={ttmNights} />
           <StatCell label="Visits (12 mo)" value={ttmVisits} />
         </div>
+
+        {/* Exclusive usage counters */}
+        {showExclusive && (
+          <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800">
+            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">Exclusive Blocks</p>
+            <div className="flex gap-4">
+              <div>
+                <p className="text-xs text-slate-400 dark:text-slate-500">Peak (this year)</p>
+                <p className="text-sm font-bold text-slate-800 dark:text-slate-100">
+                  {exclusiveUsage.peakUsed} <span className="font-normal text-slate-400">/ 1</span>
+                </p>
+              </div>
+              <div>
+                <p className="text-xs text-slate-400 dark:text-slate-500">Off-season</p>
+                <p className="text-sm font-bold text-slate-800 dark:text-slate-100">
+                  {exclusiveUsage.offseasonUsed} <span className="font-normal text-slate-400">/ 2</span>
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Waiver score */}
         {showWaiver && waiverScore !== null && (

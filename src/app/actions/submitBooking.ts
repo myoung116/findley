@@ -4,7 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { validateBookingDates, validateOffseasonGap } from '@/lib/booking/validation'
 import { getSeasonForBooking } from '@/lib/booking/seasons'
 import { decideBump, roomsConflict } from '@/lib/conflicts/bump'
-import type { BookingType } from '@/lib/supabase/types'
+import type { BookingType, UserRole } from '@/lib/supabase/types'
 
 export interface BookingPayload {
   bookingType: BookingType
@@ -45,8 +45,8 @@ export async function submitBooking(payload: BookingPayload): Promise<SubmitResu
     .eq('id', user.id)
     .single()
 
-  const profile = profileData as { id: string; role: 'papa' | 'principal' | 'viewer'; name: string } | null
-  if (!profile || (profile.role !== 'principal' && profile.role !== 'papa')) {
+  const profile = profileData as { id: string; role: UserRole; name: string } | null
+  if (!profile || (profile.role !== 'principal' && profile.role !== 'papa' && profile.role !== 'admin')) {
     return { success: false, error: 'Only principals may submit bookings.' }
   }
 
@@ -165,7 +165,7 @@ export async function submitBooking(payload: BookingPayload): Promise<SubmitResu
   }
 
   // --- Handle room conflicts ---
-  const isPapa = (profile.role as string) === 'papa'
+  const isPapa = profile.role === 'papa' || profile.role === 'admin'
 
   for (const conflict of roomConflicts) {
     const conflictingUserName = conflict.users?.name ?? 'Unknown'
