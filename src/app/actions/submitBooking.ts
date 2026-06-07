@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { validateBookingDates, validateOffseasonGap } from '@/lib/booking/validation'
 import { getSeasonForBooking } from '@/lib/booking/seasons'
+import { decideBump, roomsConflict } from '@/lib/conflicts/bump'
 import type { BookingType } from '@/lib/supabase/types'
 
 export interface BookingPayload {
@@ -22,6 +23,16 @@ export interface SubmitResult {
   error?: string
 }
 
+type ConflictRow = {
+  id: string
+  user_id: string
+  rooms_requested: string[]
+  start_date: string
+  end_date: string
+  created_at: string
+  users: { name: string } | null
+}
+
 export async function submitBooking(payload: BookingPayload): Promise<SubmitResult> {
   const supabase = await createClient()
 
@@ -30,12 +41,11 @@ export async function submitBooking(payload: BookingPayload): Promise<SubmitResu
 
   const { data: profileData } = await supabase
     .from('users')
-    .select('id, role')
+    .select('id, role, name')
     .eq('id', user.id)
     .single()
 
-  const profile = profileData as { id: string; role: string } | null
-
+  const profile = profileData as { id: string; role: 'papa' | 'principal' | 'viewer'; name: string } | null
   if (!profile || (profile.role !== 'principal' && profile.role !== 'papa')) {
     return { success: false, error: 'Only principals may submit bookings.' }
   }
@@ -51,13 +61,12 @@ export async function submitBooking(payload: BookingPayload): Promise<SubmitResu
   const start = new Date(payload.startDate)
   const end = new Date(payload.endDate)
 
-  // Validate dates for booking type
   const dateValidation = validateBookingDates(start, end, payload.bookingType)
   if (!dateValidation.valid) {
     return { success: false, error: dateValidation.error }
   }
 
-  // For off-season exclusive: check the principal's existing blocks for gap violation
+  // Off-season exclusive: gap + 2-block-per-season limit
   if (payload.bookingType === 'exclusive_offseason') {
     const { data: existingBlocks } = await supabase
       .from('bookings')
@@ -72,34 +81,27 @@ export async function submitBooking(payload: BookingPayload): Promise<SubmitResu
         start, end,
         new Date(block.start_date), new Date(block.end_date)
       )
-      if (!gapCheck.valid) {
-        return { success: false, error: gapCheck.error }
-      }
+      if (!gapCheck.valid) return { success: false, error: gapCheck.error }
     }
 
-    // Max 2 off-season exclusive blocks per principal per season year
     const seasonYear = start.getMonth() >= 8 ? start.getFullYear() : start.getFullYear() - 1
-    const seasonStart = new Date(seasonYear, 8, 1)   // Sep 1
-    const seasonEnd = new Date(seasonYear + 1, 4, 31) // May 31
-
     const { count } = await supabase
       .from('bookings')
       .select('id', { count: 'exact', head: true })
       .eq('user_id', user.id)
       .eq('booking_type', 'exclusive_offseason')
       .in('status', ['draft', 'pending', 'confirmed'])
-      .gte('start_date', seasonStart.toISOString().split('T')[0])
-      .lte('start_date', seasonEnd.toISOString().split('T')[0])
+      .gte('start_date', `${seasonYear}-09-01`)
+      .lte('start_date', `${seasonYear + 1}-05-31`)
 
     if ((count ?? 0) >= 2) {
       return { success: false, error: 'You have already used both off-season exclusive blocks for this season.' }
     }
   }
 
-  // For peak exclusive: max 1 per principal per peak season year
+  // Peak exclusive: 1-block-per-year limit
   if (payload.bookingType === 'exclusive_peak') {
     const peakYear = start.getFullYear()
-
     const { count } = await supabase
       .from('bookings')
       .select('id', { count: 'exact', head: true })
@@ -114,35 +116,32 @@ export async function submitBooking(payload: BookingPayload): Promise<SubmitResu
     }
   }
 
-  // Check room availability — full bump logic (all or nothing)
-  const { data: conflicts } = await supabase
+  // Find all overlapping active bookings that share at least one room
+  const { data: overlappingRaw } = await supabase
     .from('bookings')
-    .select('id, rooms_requested, user_id, users(name)')
+    .select('id, user_id, rooms_requested, start_date, end_date, created_at, users(name)')
     .in('status', ['pending', 'confirmed'])
+    .neq('user_id', user.id)
     .lte('start_date', payload.endDate)
     .gte('end_date', payload.startDate)
 
-  type ConflictRow = { id: string; rooms_requested: string[]; user_id: string }
-  const requestedSet = new Set(payload.roomIds)
-  for (const conflict of (conflicts as ConflictRow[]) ?? []) {
-    const conflictRooms = conflict.rooms_requested
-    const hasOverlap = conflictRooms.some(r => requestedSet.has(r))
-    if (hasOverlap) {
-      // Papa always wins — bump the conflicting booking instead (handled post-insert)
-      // For regular principals, reject
-      if (profile.role !== 'papa') {
-        return {
-          success: false,
-          error: `One or more of your requested rooms is already booked for those dates.`,
-        }
-      }
-    }
-  }
+  const overlapping = (overlappingRaw ?? []) as ConflictRow[]
+  const roomConflicts = overlapping.filter(b => roomsConflict(payload.roomIds, b.rooms_requested))
 
+  // Get submitting principal's current waiver score
+  const { data: myScoreData } = await supabase
+    .from('waiver_scores')
+    .select('score, nights_ttm, requests_ttm')
+    .eq('user_id', user.id)
+    .order('calculated_at', { ascending: false })
+    .limit(1)
+    .single()
+
+  const myScore = myScoreData as { score: number; nights_ttm: number; requests_ttm: number } | null
+
+  // --- Insert the booking first so we have an ID ---
   const season = getSeasonForBooking(start)
-
-  // For last-minute guest: auto-confirm
-  const status = payload.bookingType === 'lastminute_guest' ? 'confirmed' : 'pending'
+  const initialStatus = payload.bookingType === 'lastminute_guest' ? 'confirmed' : 'pending'
 
   const { data: bookingData, error: insertError } = await supabase
     .from('bookings')
@@ -151,21 +150,167 @@ export async function submitBooking(payload: BookingPayload): Promise<SubmitResu
       start_date: payload.startDate,
       end_date: payload.endDate,
       booking_type: payload.bookingType,
-      status,
+      status: initialStatus,
       season,
       rooms_requested: payload.roomIds,
       guest_count: payload.guestCount,
       notes: payload.notes || null,
     })
-    .select('id')
+    .select('id, created_at')
     .single()
 
-  const booking = bookingData as { id: string } | null
+  const booking = bookingData as { id: string; created_at: string } | null
   if (insertError || !booking) {
     return { success: false, error: 'Failed to submit booking. Please try again.' }
   }
 
-  // Store guest details in sleep_assignments placeholder (name/relationship only for now)
+  // --- Handle room conflicts ---
+  const isPapa = (profile.role as string) === 'papa'
+
+  for (const conflict of roomConflicts) {
+    const conflictingUserName = conflict.users?.name ?? 'Unknown'
+
+    if (isPapa) {
+      // Papa always wins — bump the conflicting booking
+      await supabase
+        .from('bookings')
+        .update({ status: 'bumped' })
+        .eq('id', conflict.id)
+
+      // Get available rooms for bump notification
+      const { data: allRooms } = await supabase
+        .from('rooms')
+        .select('id, name')
+
+      const availableRooms = (allRooms ?? []).filter(
+        r => !conflict.rooms_requested.includes(r.id) && !payload.roomIds.includes(r.id)
+      )
+
+      await supabase.from('notifications').insert({
+        user_id: conflict.user_id,
+        type: 'papa_overlap',
+        payload: {
+          dates_requested: { start: conflict.start_date, end: conflict.end_date },
+          rooms_requested: conflict.rooms_requested,
+          rooms_available: availableRooms.map(r => ({ id: r.id, name: (r as { id: string; name: string }).name })),
+          conflicting_principal: 'Papa',
+          booking_id: conflict.id,
+        },
+      })
+    } else if (
+      payload.bookingType === 'open_shared' &&
+      conflict.rooms_requested.some(r => payload.roomIds.includes(r))
+    ) {
+      // Waiver-based bump for open_shared conflicts
+      const { data: theirScoreData } = await supabase
+        .from('waiver_scores')
+        .select('nights_ttm, requests_ttm')
+        .eq('user_id', conflict.user_id)
+        .order('calculated_at', { ascending: false })
+        .limit(1)
+        .single()
+
+      const theirScore = theirScoreData as { nights_ttm: number; requests_ttm: number } | null
+
+      const decision = decideBump(
+        {
+          bookingId: booking.id,
+          userId: user.id,
+          userName: profile.name,
+          waiverInput: { bedroomNightsUsedTtm: myScore?.nights_ttm ?? 0, requestsMadeTtm: myScore?.requests_ttm ?? 0 },
+          submittedAt: new Date(booking.created_at),
+          roomsRequested: payload.roomIds,
+          startDate: payload.startDate,
+          endDate: payload.endDate,
+        },
+        {
+          bookingId: conflict.id,
+          userId: conflict.user_id,
+          userName: conflictingUserName,
+          waiverInput: { bedroomNightsUsedTtm: theirScore?.nights_ttm ?? 0, requestsMadeTtm: theirScore?.requests_ttm ?? 0 },
+          submittedAt: new Date(conflict.created_at),
+          roomsRequested: conflict.rooms_requested,
+          startDate: conflict.start_date,
+          endDate: conflict.end_date,
+        }
+      )
+
+      // Bump the loser
+      await supabase
+        .from('bookings')
+        .update({ status: 'bumped' })
+        .eq('id', decision.loserBookingId)
+
+      // If the incoming booking lost, cancel it and return error
+      if (decision.loserBookingId === booking.id) {
+        await supabase.from('bookings').update({ status: 'bumped' }).eq('id', booking.id)
+
+        const { data: allRooms } = await supabase.from('rooms').select('id, name')
+        const bookedRoomIds = new Set(conflict.rooms_requested)
+        const availableRooms = (allRooms ?? []).filter(r => !bookedRoomIds.has(r.id))
+
+        await supabase.from('notifications').insert({
+          user_id: user.id,
+          type: 'waiver_bump',
+          payload: {
+            dates_requested: { start: payload.startDate, end: payload.endDate },
+            rooms_requested: payload.roomIds,
+            rooms_available: availableRooms.map(r => ({ id: r.id, name: (r as { id: string; name: string }).name })),
+            conflicting_principal: conflictingUserName,
+            booking_id: booking.id,
+          },
+        })
+
+        return {
+          success: false,
+          error: `Your request was bumped by ${conflictingUserName} who has higher booking priority for those rooms. Check your notifications for available alternatives.`,
+        }
+      }
+
+      // Incoming booking won — notify the loser
+      const { data: allRooms } = await supabase.from('rooms').select('id, name')
+      const bookedRoomIds = new Set(payload.roomIds)
+      const availableRooms = (allRooms ?? []).filter(r => !bookedRoomIds.has(r.id))
+
+      await supabase.from('notifications').insert({
+        user_id: decision.loserUserId,
+        type: 'waiver_bump',
+        payload: {
+          dates_requested: { start: conflict.start_date, end: conflict.end_date },
+          rooms_requested: conflict.rooms_requested,
+          rooms_available: availableRooms.map(r => ({ id: r.id, name: (r as { id: string; name: string }).name })),
+          conflicting_principal: profile.name,
+          booking_id: conflict.id,
+        },
+      })
+    } else if (
+      payload.bookingType !== 'open_shared' &&
+      !isPapa
+    ) {
+      // Exclusive block hitting another booking — flag as conflict (social resolution)
+      await supabase.from('conflicts').upsert(
+        {
+          booking_id_a: booking.id < conflict.id ? booking.id : conflict.id,
+          booking_id_b: booking.id < conflict.id ? conflict.id : booking.id,
+          status: 'open',
+        },
+        { onConflict: 'booking_id_a,booking_id_b' }
+      )
+
+      // Notify the other principal
+      await supabase.from('notifications').insert({
+        user_id: conflict.user_id,
+        type: 'exclusive_overlap',
+        payload: {
+          dates_requested: { start: payload.startDate, end: payload.endDate },
+          conflicting_principal: profile.name,
+          booking_id: conflict.id,
+        },
+      })
+    }
+  }
+
+  // Store guest details
   if (payload.guests.length > 0) {
     await supabase.from('sleep_assignments').insert(
       payload.roomIds.map(roomId => ({
@@ -176,31 +321,18 @@ export async function submitBooking(payload: BookingPayload): Promise<SubmitResu
     )
   }
 
-  // Conflict detection: flag overlapping exclusive bookings from other principals
-  if (
-    payload.bookingType === 'exclusive_offseason' ||
-    payload.bookingType === 'exclusive_peak'
-  ) {
-    const { data: overlapping } = await supabase
-      .from('bookings')
-      .select('id')
-      .neq('user_id', user.id)
-      .in('booking_type', ['exclusive_offseason', 'exclusive_peak'])
-      .in('status', ['draft', 'pending', 'confirmed'])
-      .lte('start_date', payload.endDate)
-      .gte('end_date', payload.startDate)
-
-    for (const other of (overlapping as { id: string }[]) ?? []) {
-      await supabase.from('conflicts').upsert(
-        {
-          booking_id_a: booking.id < other.id ? booking.id : other.id,
-          booking_id_b: booking.id < other.id ? other.id : booking.id,
-          status: 'open',
-        },
-        { onConflict: 'booking_id_a,booking_id_b' }
-      )
-    }
-  }
+  // Notify the submitter that their booking was received
+  await supabase.from('notifications').insert({
+    user_id: user.id,
+    type: 'booking_confirmed',
+    payload: {
+      booking_id: booking.id,
+      booking_type: payload.bookingType,
+      start_date: payload.startDate,
+      end_date: payload.endDate,
+      status: initialStatus,
+    },
+  })
 
   return { success: true, bookingId: booking.id }
 }
