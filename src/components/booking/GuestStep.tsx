@@ -7,29 +7,18 @@ interface Guest {
 
 interface Props {
   guests: Guest[]
-  guestCount: number
   acknowledged: boolean
   onGuestsChange: (guests: Guest[]) => void
-  onGuestCountChange: (count: number) => void
   onAcknowledgeChange: (checked: boolean) => void
 }
 
-export function GuestStep({
-  guests,
-  guestCount,
-  acknowledged,
-  onGuestsChange,
-  onGuestCountChange,
-  onAcknowledgeChange,
-}: Props) {
+export function GuestStep({ guests, acknowledged, onGuestsChange, onAcknowledgeChange }: Props) {
   function addGuest() {
     onGuestsChange([...guests, { name: '', relationship: '' }])
-    onGuestCountChange(guestCount + 1)
   }
 
   function removeGuest(index: number) {
     onGuestsChange(guests.filter((_, i) => i !== index))
-    onGuestCountChange(Math.max(0, guestCount - 1))
   }
 
   function updateGuest(index: number, field: keyof Guest, value: string) {
@@ -39,7 +28,12 @@ export function GuestStep({
 
   return (
     <div className="space-y-4">
-      <h2 className="text-base font-semibold text-slate-700 dark:text-slate-200">Guests</h2>
+      <div>
+        <h2 className="text-base font-semibold text-slate-700 dark:text-slate-200">External guests</h2>
+        <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
+          Anyone attending who is not a Findley family member. Leave blank if none.
+        </p>
+      </div>
 
       <div className="space-y-3">
         {guests.map((guest, i) => (
@@ -77,7 +71,7 @@ export function GuestStep({
         onClick={addGuest}
         className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium"
       >
-        + Add guest
+        + Add external guest
       </button>
 
       <div className="border-t border-slate-100 dark:border-slate-700 pt-4">

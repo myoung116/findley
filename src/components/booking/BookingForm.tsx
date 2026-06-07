@@ -12,8 +12,8 @@ import { ThemeToggle } from '@/components/ThemeToggle'
 import { format, parseISO } from 'date-fns'
 import type { BookingType } from '@/lib/supabase/types'
 
-type Step = 'type' | 'dates' | 'rooms' | 'guests' | 'confirm'
-const STEPS: Step[] = ['type', 'dates', 'rooms', 'guests', 'confirm']
+type Step = 'type' | 'dates' | 'guests' | 'rooms' | 'confirm'
+const STEPS: Step[] = ['type', 'dates', 'guests', 'rooms', 'confirm']
 
 interface Guest { name: string; relationship: string }
 
@@ -32,7 +32,8 @@ export function BookingForm({ inline, onClose, initialStartDate = '' }: Props = 
   const [endDate, setEndDate] = useState('')
   const [selectedRoomIds, setSelectedRoomIds] = useState<string[]>([])
   const [guests, setGuests] = useState<Guest[]>([])
-  const [guestCount, setGuestCount] = useState(0)
+  const [familyCount, setFamilyCount] = useState(1)
+  const [roomCapacity, setRoomCapacity] = useState(0)
   const [acknowledged, setAcknowledged] = useState(false)
   const [notes, setNotes] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -50,8 +51,8 @@ export function BookingForm({ inline, onClose, initialStartDate = '' }: Props = 
     switch (step) {
       case 'type':    return bookingType !== null
       case 'dates':   return !!startDate && !!endDate && startDate < endDate
-      case 'rooms':   return selectedRoomIds.length > 0
       case 'guests':  return acknowledged
+      case 'rooms':   return selectedRoomIds.length > 0 && roomCapacity >= (familyCount + guests.length)
       case 'confirm': return true
     }
   }
@@ -66,7 +67,9 @@ export function BookingForm({ inline, onClose, initialStartDate = '' }: Props = 
 
     const result = await submitBooking({
       bookingType, startDate, endDate,
-      roomIds: selectedRoomIds, guestCount, guests, notes,
+      roomIds: selectedRoomIds,
+      guestCount: familyCount + guests.length,
+      guests, notes,
       acknowledgedResponsibility: acknowledged,
     })
 
@@ -94,20 +97,24 @@ export function BookingForm({ inline, onClose, initialStartDate = '' }: Props = 
         <DateStep
           bookingType={bookingType}
           startDate={startDate} endDate={endDate}
+          familyCount={familyCount}
           onStartChange={setStartDate} onEndChange={setEndDate}
+          onFamilyCountChange={setFamilyCount}
+        />
+      )}
+      {step === 'guests' && (
+        <GuestStep
+          guests={guests} acknowledged={acknowledged}
+          onGuestsChange={setGuests}
+          onAcknowledgeChange={setAcknowledged}
         />
       )}
       {step === 'rooms' && (
         <RoomStep
           startDate={startDate} endDate={endDate}
           selectedRoomIds={selectedRoomIds} onToggleRoom={toggleRoom}
-        />
-      )}
-      {step === 'guests' && (
-        <GuestStep
-          guests={guests} guestCount={guestCount} acknowledged={acknowledged}
-          onGuestsChange={setGuests} onGuestCountChange={setGuestCount}
-          onAcknowledgeChange={setAcknowledged}
+          totalGuests={familyCount + guests.length}
+          onCapacityChange={setRoomCapacity}
         />
       )}
       {step === 'confirm' && bookingType && (
@@ -117,7 +124,9 @@ export function BookingForm({ inline, onClose, initialStartDate = '' }: Props = 
             <Row label="Type"  value={BOOKING_TYPE_LABELS[bookingType]} />
             <Row label="Dates" value={`${format(parseISO(startDate), 'MMM d')} – ${format(parseISO(endDate), 'MMM d, yyyy')}`} />
             <Row label="Rooms" value={`${selectedRoomIds.length} selected`} />
-            <Row label="Guests" value={String(guests.length)} />
+            <Row label="Family members" value={String(familyCount)} />
+            <Row label="External guests" value={guests.length > 0 ? String(guests.length) : 'None'} />
+            <Row label="Total party" value={String(familyCount + guests.length)} />
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Notes (optional)</label>

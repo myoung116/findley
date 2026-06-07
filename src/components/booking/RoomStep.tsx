@@ -7,10 +7,12 @@ interface Props {
   startDate: string
   endDate: string
   selectedRoomIds: string[]
+  totalGuests: number
   onToggleRoom: (roomId: string) => void
+  onCapacityChange: (capacity: number) => void
 }
 
-export function RoomStep({ startDate, endDate, selectedRoomIds, onToggleRoom }: Props) {
+export function RoomStep({ startDate, endDate, selectedRoomIds, totalGuests, onToggleRoom, onCapacityChange }: Props) {
   const [rooms, setRooms] = useState<RoomAvailabilityResult[]>([])
   const [isPending, startTransition] = useTransition()
 
@@ -21,6 +23,14 @@ export function RoomStep({ startDate, endDate, selectedRoomIds, onToggleRoom }: 
       setRooms(result)
     })
   }, [startDate, endDate])
+
+  const selectedRooms = rooms.filter(r => selectedRoomIds.includes(r.id))
+  const totalCapacity = selectedRooms.reduce((sum, r) => sum + r.max_occupancy, 0)
+  const capacityOk = totalCapacity >= totalGuests
+  const capacityShort = selectedRoomIds.length > 0 && !capacityOk
+
+  // Notify parent whenever capacity changes so it can gate the Continue button
+  useEffect(() => { onCapacityChange(totalCapacity) }, [totalCapacity, onCapacityChange])
 
   if (!startDate || !endDate) {
     return <p className="text-sm text-slate-400 dark:text-slate-500">Select dates first to see room availability.</p>
@@ -79,10 +89,29 @@ export function RoomStep({ startDate, endDate, selectedRoomIds, onToggleRoom }: 
         </div>
       )}
 
+      {/* Capacity summary */}
       {selectedRoomIds.length > 0 && (
-        <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">
-          {selectedRoomIds.length} room{selectedRoomIds.length !== 1 ? 's' : ''} selected
-        </p>
+        <div className={`rounded-xl px-4 py-3 text-sm flex items-start gap-2 ${
+          capacityShort
+            ? 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300'
+            : 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-300'
+        }`}>
+          <span className="mt-0.5">{capacityShort ? '⚠️' : '✓'}</span>
+          <div>
+            <p className="font-medium">
+              {selectedRoomIds.length} room{selectedRoomIds.length !== 1 ? 's' : ''} · {totalCapacity} beds total
+            </p>
+            {capacityShort ? (
+              <p className="text-xs mt-0.5 opacity-80">
+                Your party of {totalGuests} exceeds capacity. Add more rooms or reduce your guest count.
+              </p>
+            ) : (
+              <p className="text-xs mt-0.5 opacity-80">
+                Fits your party of {totalGuests}.
+              </p>
+            )}
+          </div>
+        </div>
       )}
     </div>
   )
