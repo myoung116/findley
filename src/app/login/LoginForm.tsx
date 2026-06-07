@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { signUp } from '@/app/actions/signUp'
 
 type Mode = 'signin' | 'signup'
 
@@ -64,32 +65,14 @@ export function LoginForm() {
   async function handleSignUp(e: React.FormEvent) {
     e.preventDefault()
     if (!familyBranch) { setError('Please select your family branch.'); return }
-    const branch = familyBranch as FamilyBranch
 
     setLoading(true)
     setError(null)
 
-    const supabase = createClient()
+    const result = await signUp({ email, password, name, familyBranch: familyBranch as FamilyBranch })
 
-    // Create auth user
-    const { data, error: authError } = await supabase.auth.signUp({ email, password })
-    if (authError || !data.user) {
-      setError(authError?.message ?? 'Sign up failed. Please try again.')
-      setLoading(false)
-      return
-    }
-
-    // Insert profile row — role defaults to viewer, admin can promote later
-    const { error: profileError } = await supabase.from('users').insert({
-      id: data.user.id,
-      email,
-      name,
-      role: 'viewer',
-      family_branch: branch,
-    })
-
-    if (profileError) {
-      setError('Account created but profile setup failed. Contact Michael to complete setup.')
+    if (!result.success) {
+      setError(result.error ?? 'Sign up failed. Please try again.')
       setLoading(false)
       return
     }
