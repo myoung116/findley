@@ -1,0 +1,135 @@
+'use client'
+
+import { useState } from 'react'
+import { format, addMonths, subMonths } from 'date-fns'
+import { buildCalendarGrid, type CalendarBooking } from '@/lib/calendar/utils'
+import { DayCell } from './DayCell'
+import { BookingDetailModal } from './BookingDetailModal'
+import type { UserRole } from '@/lib/supabase/types'
+
+interface Room {
+  id: string
+  name: string
+  bed_count: number
+  max_occupancy: number
+}
+
+interface Props {
+  bookings: CalendarBooking[]
+  rooms: Room[]
+  role: UserRole
+  userName: string
+}
+
+const DAY_HEADERS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
+
+export function CalendarClient({ bookings, rooms, role, userName }: Props) {
+  const [current, setCurrent] = useState(new Date())
+  const [selectedBooking, setSelectedBooking] = useState<CalendarBooking | null>(null)
+
+  const showRoomDetail = role === 'papa' || role === 'principal'
+  const year = current.getFullYear()
+  const month = current.getMonth()
+  const days = buildCalendarGrid(year, month, bookings)
+
+  return (
+    <div className="min-h-screen bg-slate-50">
+      {/* Header */}
+      <header className="bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between">
+        <div>
+          <h1 className="text-xl font-semibold text-slate-800">Findley Lake</h1>
+          <p className="text-xs text-slate-400">Welcome, {userName}</p>
+        </div>
+        <div className="flex items-center gap-2">
+          {showRoomDetail && (
+            <a
+              href="/book"
+              className="text-sm bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              + Request
+            </a>
+          )}
+        </div>
+      </header>
+
+      {/* Calendar nav */}
+      <div className="max-w-5xl mx-auto px-4 pt-6">
+        <div className="flex items-center justify-between mb-4">
+          <button
+            onClick={() => setCurrent(d => subMonths(d, 1))}
+            className="p-2 rounded-lg hover:bg-slate-200 text-slate-600 transition-colors"
+          >
+            ‹
+          </button>
+          <h2 className="text-lg font-semibold text-slate-700">
+            {format(current, 'MMMM yyyy')}
+          </h2>
+          <button
+            onClick={() => setCurrent(d => addMonths(d, 1))}
+            className="p-2 rounded-lg hover:bg-slate-200 text-slate-600 transition-colors"
+          >
+            ›
+          </button>
+        </div>
+
+        {/* Legend */}
+        <div className="flex flex-wrap gap-3 mb-4 text-xs">
+          <span className="flex items-center gap-1">
+            <span className="w-3 h-3 rounded-sm bg-sky-100 border border-sky-300 inline-block" />
+            Peak season
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="w-3 h-3 rounded-sm bg-blue-200 border border-blue-400 inline-block" />
+            Exclusive (peak)
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="w-3 h-3 rounded-sm bg-amber-100 border border-amber-400 inline-block" />
+            Exclusive (off-season)
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="w-3 h-3 rounded-sm bg-green-100 border border-green-400 inline-block" />
+            Open/shared
+          </span>
+          <span className="flex items-center gap-1">
+            <span className="w-3 h-3 rounded-sm bg-purple-100 border border-purple-400 inline-block" />
+            Last-minute guest
+          </span>
+        </div>
+
+        {/* Grid */}
+        <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm">
+          <div className="grid grid-cols-7 border-b border-slate-200">
+            {DAY_HEADERS.map(d => (
+              <div key={d} className="text-center text-xs font-medium text-slate-400 py-2">
+                {d}
+              </div>
+            ))}
+          </div>
+          <div className="grid grid-cols-7">
+            {days.map((day, i) => (
+              <DayCell
+                key={i}
+                day={day}
+                showRoomDetail={showRoomDetail}
+                onBookingClick={setSelectedBooking}
+              />
+            ))}
+          </div>
+        </div>
+
+        {!showRoomDetail && (
+          <p className="text-center text-xs text-slate-400 mt-4">
+            Showing confirmed bookings only
+          </p>
+        )}
+      </div>
+
+      <BookingDetailModal
+        booking={selectedBooking}
+        rooms={rooms}
+        showRoomDetail={showRoomDetail}
+        onClose={() => setSelectedBooking(null)}
+      />
+    </div>
+  )
+}

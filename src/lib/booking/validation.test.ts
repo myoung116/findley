@@ -1,9 +1,6 @@
 import { describe, it, expect } from 'vitest'
 import { validateBookingDates, validateOffseasonGap, datesOverlap } from './validation'
 
-// Helpers
-const monday = (y: number, m: number, d: number) => new Date(y, m - 1, d)
-const friday = (y: number, m: number, d: number) => new Date(y, m - 1, d)
 
 describe('validateBookingDates — exclusive_offseason', () => {
   it('accepts a valid Mon–Mon 7-night off-season block', () => {
