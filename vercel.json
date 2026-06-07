@@ -3,6 +3,10 @@
     {
       "path": "/api/cron/waiver",
       "schedule": "0 6 * * 1"
+    },
+    {
+      "path": "/api/cron/annual",
+      "schedule": "0 7 * * *"
     }
   ]
 }
