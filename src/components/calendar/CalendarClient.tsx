@@ -176,7 +176,8 @@ export function CalendarClient({ bookings, rooms, role, userName, familyBranch, 
                 rooms={rooms}
                 showRoomDetail={showRoomDetail}
                 onClose={closePanel}
-                onRequestStay={showRoomDetail ? (date) => openBookingForm(date) : undefined}
+                canManageAll={role === 'papa'}
+              onRequestStay={showRoomDetail ? (date) => openBookingForm(date) : undefined}
               />
             )}
             {panelMode === 'booking' && (

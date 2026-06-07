@@ -1,8 +1,10 @@
 'use client'
 
+import { useState } from 'react'
 import { format, parseISO } from 'date-fns'
 import { isPeakSeason } from '@/lib/booking/seasons'
 import { BOOKING_TYPE_STYLES } from '@/lib/calendar/utils'
+import { ManageBookingModal, type ManageableBooking } from '@/components/booking/ManageBookingModal'
 import type { CalendarBooking } from '@/lib/calendar/utils'
 
 interface Room { id: string; name: string; bed_count: number; max_occupancy: number }
@@ -12,12 +14,13 @@ interface Props {
   bookings: CalendarBooking[]
   rooms: Room[]
   showRoomDetail: boolean
+  canManageAll?: boolean
   onClose: () => void
   onRequestStay?: (date: Date) => void
 }
 
-
-export function DayDetailPanel({ date, bookings, rooms, showRoomDetail, onClose, onRequestStay }: Props) {
+export function DayDetailPanel({ date, bookings, rooms, showRoomDetail, canManageAll, onClose, onRequestStay }: Props) {
+  const [managing, setManaging] = useState<ManageableBooking | null>(null)
   const dayBookings = bookings.filter(b => {
     const start = parseISO(b.startDate)
     const end = parseISO(b.endDate)
@@ -33,6 +36,7 @@ export function DayDetailPanel({ date, bookings, rooms, showRoomDetail, onClose,
   const interested = dayBookings.filter(b => b.status === 'pending' || b.status === 'draft')
 
   return (
+    <>
     <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm mt-4 overflow-hidden">
       {/* Header */}
       <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100 dark:border-slate-800">
@@ -68,7 +72,7 @@ export function DayDetailPanel({ date, bookings, rooms, showRoomDetail, onClose,
                 <div>
                   <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">Booked</p>
                   <div className="space-y-2">
-                    {confirmed.map(b => <FamilyRow key={b.id} booking={b} rooms={rooms} showRooms={showRoomDetail} />)}
+                    {confirmed.map(b => <FamilyRow key={b.id} booking={b} rooms={rooms} showRooms={showRoomDetail} canManage={canManageAll} onManage={setManaging} />)}
                   </div>
                 </div>
               )}
@@ -76,7 +80,7 @@ export function DayDetailPanel({ date, bookings, rooms, showRoomDetail, onClose,
                 <div>
                   <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">Interested / Pending</p>
                   <div className="space-y-2">
-                    {interested.map(b => <FamilyRow key={b.id} booking={b} rooms={rooms} showRooms={showRoomDetail} />)}
+                    {interested.map(b => <FamilyRow key={b.id} booking={b} rooms={rooms} showRooms={showRoomDetail} canManage={canManageAll} onManage={setManaging} />)}
                   </div>
                 </div>
               )}
@@ -146,10 +150,18 @@ export function DayDetailPanel({ date, bookings, rooms, showRoomDetail, onClose,
         </div>
       </div>
     </div>
+    {managing && <ManageBookingModal booking={managing} onClose={() => setManaging(null)} />}
+    </>
   )
 }
 
-function FamilyRow({ booking, rooms, showRooms }: { booking: CalendarBooking; rooms: Room[]; showRooms: boolean }) {
+function FamilyRow({ booking, rooms, showRooms, canManage, onManage }: {
+  booking: CalendarBooking
+  rooms: Room[]
+  showRooms: boolean
+  canManage?: boolean
+  onManage?: (b: ManageableBooking) => void
+}) {
   const style = BOOKING_TYPE_STYLES[booking.bookingType]
   const bookedRooms = showRooms ? rooms.filter(r => booking.roomsRequested.includes(r.id)) : []
 
@@ -166,8 +178,16 @@ function FamilyRow({ booking, rooms, showRooms }: { booking: CalendarBooking; ro
           </p>
         )}
       </div>
-      <div className="text-right shrink-0">
-        <span className="text-xs font-medium text-slate-600 dark:text-slate-300">{booking.guestCount} guests</span>
+      <div className="text-right shrink-0 space-y-1">
+        <span className="text-xs font-medium text-slate-600 dark:text-slate-300 block">{booking.guestCount} guests</span>
+        {canManage && onManage && (
+          <button
+            onClick={() => onManage({ id: booking.id, startDate: booking.startDate, endDate: booking.endDate, bookingType: booking.bookingType, status: booking.status, guestCount: booking.guestCount })}
+            className="text-xs text-blue-500 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
+          >
+            Manage
+          </button>
+        )}
       </div>
     </div>
   )
