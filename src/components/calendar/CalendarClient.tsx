@@ -77,7 +77,7 @@ export function CalendarClient({ bookings, rooms, role, userName, familyBranch, 
               + Request
             </button>
           )}
-          {role !== 'viewer' && (
+          {role === 'admin' && (
             <a href="/admin" className="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 px-2 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
               Admin
             </a>
