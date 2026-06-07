@@ -1,0 +1,80 @@
+import { createServerClient } from '@supabase/ssr'
+import { NextResponse, type NextRequest } from 'next/server'
+import type { UserRole } from '@/lib/supabase/types'
+
+const ROLE_REQUIRED: Record<string, UserRole[]> = {
+  '/book':      ['papa', 'principal'],
+  '/admin':     ['papa', 'principal'],
+  '/optimizer': ['papa', 'principal'],
+  '/profile':   ['papa', 'principal', 'viewer'],
+}
+
+export async function middleware(request: NextRequest) {
+  let supabaseResponse = NextResponse.next({ request })
+
+  const supabase = createServerClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    {
+      cookies: {
+        getAll() {
+          return request.cookies.getAll()
+        },
+        setAll(cookiesToSet) {
+          cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value))
+          supabaseResponse = NextResponse.next({ request })
+          cookiesToSet.forEach(({ name, value, options }) =>
+            supabaseResponse.cookies.set(name, value, options)
+          )
+        },
+      },
+    }
+  )
+
+  // Refresh session — must not write any logic between createServerClient and getUser
+  const { data: { user } } = await supabase.auth.getUser()
+
+  const pathname = request.nextUrl.pathname
+
+  // Redirect unauthenticated users away from protected routes
+  const protectedPrefix = Object.keys(ROLE_REQUIRED).find(p => pathname.startsWith(p))
+  if (protectedPrefix && !user) {
+    const loginUrl = request.nextUrl.clone()
+    loginUrl.pathname = '/login'
+    loginUrl.searchParams.set('redirectTo', pathname)
+    return NextResponse.redirect(loginUrl)
+  }
+
+  // Role-gate: fetch role from public.users and check against required roles
+  if (protectedPrefix && user) {
+    const { data: profile } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
+    const role = profile?.role as UserRole | undefined
+    const allowed = ROLE_REQUIRED[protectedPrefix]
+
+    if (!role || !allowed.includes(role)) {
+      const forbiddenUrl = request.nextUrl.clone()
+      forbiddenUrl.pathname = '/'
+      return NextResponse.redirect(forbiddenUrl)
+    }
+  }
+
+  // Redirect already-authenticated users away from login page
+  if (pathname === '/login' && user) {
+    const homeUrl = request.nextUrl.clone()
+    homeUrl.pathname = '/'
+    return NextResponse.redirect(homeUrl)
+  }
+
+  return supabaseResponse
+}
+
+export const config = {
+  matcher: [
+    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+  ],
+}
