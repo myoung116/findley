@@ -20,14 +20,15 @@ interface Guest { name: string; relationship: string }
 interface Props {
   inline?: boolean
   onClose?: () => void
+  initialStartDate?: string
 }
 
-export function BookingForm({ inline, onClose }: Props = {}) {
+export function BookingForm({ inline, onClose, initialStartDate = '' }: Props = {}) {
   const router = useRouter()
 
   const [step, setStep] = useState<Step>('type')
   const [bookingType, setBookingType] = useState<BookingType | null>(null)
-  const [startDate, setStartDate] = useState('')
+  const [startDate, setStartDate] = useState(initialStartDate)
   const [endDate, setEndDate] = useState('')
   const [selectedRoomIds, setSelectedRoomIds] = useState<string[]>([])
   const [guests, setGuests] = useState<Guest[]>([])

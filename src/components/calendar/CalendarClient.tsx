@@ -54,7 +54,13 @@ export function CalendarClient({ bookings, rooms, role, userName, familyBranch, 
     else { setSelectedDay(date); setPanelMode('day'); scrollToPanel() }
   }
 
-  function openBookingForm() { setPanelMode('booking'); scrollToPanel() }
+  const [bookingInitialDate, setBookingInitialDate] = useState<string>('')
+
+  function openBookingForm(date?: Date) {
+    setBookingInitialDate(date ? format(date, 'yyyy-MM-dd') : '')
+    setPanelMode('booking')
+    scrollToPanel()
+  }
   function closePanel() { setPanelMode(null); setSelectedDay(null) }
 
   return (
@@ -170,12 +176,12 @@ export function CalendarClient({ bookings, rooms, role, userName, familyBranch, 
                 rooms={rooms}
                 showRoomDetail={showRoomDetail}
                 onClose={closePanel}
-                onRequestStay={showRoomDetail ? openBookingForm : undefined}
+                onRequestStay={showRoomDetail ? () => openBookingForm(selectedDay ?? undefined) : undefined}
               />
             )}
             {panelMode === 'booking' && (
               <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm mt-4 overflow-hidden">
-                <BookingForm inline onClose={closePanel} />
+                <BookingForm inline onClose={closePanel} initialStartDate={bookingInitialDate} />
               </div>
             )}
           </div>
