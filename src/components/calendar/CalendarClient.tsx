@@ -73,7 +73,7 @@ export function CalendarClient({ bookings, rooms, role, userName, familyBranch, 
         </div>
         <div className="flex items-center gap-2">
           {showRoomDetail && (
-            <button onClick={openBookingForm} className="text-sm bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition-colors">
+            <button onClick={() => openBookingForm()} className="text-sm bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition-colors">
               + Request
             </button>
           )}
@@ -176,7 +176,7 @@ export function CalendarClient({ bookings, rooms, role, userName, familyBranch, 
                 rooms={rooms}
                 showRoomDetail={showRoomDetail}
                 onClose={closePanel}
-                onRequestStay={showRoomDetail ? () => openBookingForm(selectedDay ?? undefined) : undefined}
+                onRequestStay={showRoomDetail ? (date) => openBookingForm(date) : undefined}
               />
             )}
             {panelMode === 'booking' && (

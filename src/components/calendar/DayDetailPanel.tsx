@@ -13,7 +13,7 @@ interface Props {
   rooms: Room[]
   showRoomDetail: boolean
   onClose: () => void
-  onRequestStay?: () => void
+  onRequestStay?: (date: Date) => void
 }
 
 
@@ -129,7 +129,7 @@ export function DayDetailPanel({ date, bookings, rooms, showRoomDetail, onClose,
 
           {onRequestStay && (
             <button
-              onClick={onRequestStay}
+              onClick={() => onRequestStay(date)}
               className="w-full text-sm bg-blue-600 text-white rounded-xl py-2 hover:bg-blue-700 transition-colors font-medium"
             >
               + Request a Stay
