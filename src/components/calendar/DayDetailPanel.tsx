@@ -15,11 +15,6 @@ interface Props {
   onClose: () => void
 }
 
-const STATUS_LABEL: Record<string, { label: string; color: string }> = {
-  confirmed: { label: 'Booked',      color: 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300' },
-  pending:   { label: 'Interested',  color: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/50 dark:text-yellow-300' },
-  draft:     { label: 'Draft',       color: 'bg-slate-100 text-slate-500 dark:bg-slate-700 dark:text-slate-400' },
-}
 
 export function DayDetailPanel({ date, bookings, rooms, showRoomDetail, onClose }: Props) {
   const dayBookings = bookings.filter(b => {
