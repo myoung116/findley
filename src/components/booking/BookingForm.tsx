@@ -8,6 +8,7 @@ import { RoomStep } from './RoomStep'
 import { GuestStep } from './GuestStep'
 import { submitBooking } from '@/app/actions/submitBooking'
 import { BOOKING_TYPE_LABELS } from '@/lib/booking/dates'
+import { ThemeToggle } from '@/components/ThemeToggle'
 import { format, parseISO } from 'date-fns'
 import type { BookingType } from '@/lib/supabase/types'
 
@@ -86,12 +87,15 @@ export function BookingForm() {
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
-      <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 px-4 py-3 flex items-center gap-3">
-        <a href="/" className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg">←</a>
-        <div>
-          <h1 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Request a Stay</h1>
-          <p className="text-xs text-slate-400 dark:text-slate-500">Step {stepIndex + 1} of {STEPS.length}</p>
+      <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 px-4 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <a href="/" className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg">←</a>
+          <div>
+            <h1 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Request a Stay</h1>
+            <p className="text-xs text-slate-400 dark:text-slate-500">Step {stepIndex + 1} of {STEPS.length}</p>
+          </div>
         </div>
+        <ThemeToggle />
       </header>
 
       {/* Progress bar */}

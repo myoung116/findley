@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { format, parseISO } from 'date-fns'
 import { BOOKING_TYPE_LABELS } from '@/lib/booking/dates'
+import { ThemeToggle } from '@/components/ThemeToggle'
 import type { BookingType } from '@/lib/supabase/types'
 
 type ConflictWithBookings = {
@@ -98,6 +99,7 @@ export default async function AdminPage() {
           <a href="/" className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg">←</a>
           <h1 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Admin</h1>
         </div>
+        <ThemeToggle />
       </header>
 
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-8">
