@@ -7,17 +7,20 @@ import type { CalendarDay, CalendarBooking } from '@/lib/calendar/utils'
 interface Props {
   day: CalendarDay
   showRoomDetail?: boolean
+  selected?: boolean
   onBookingClick?: (booking: CalendarBooking) => void
   onDayClick?: (date: Date) => void
 }
 
-export function DayCell({ day, onBookingClick, onDayClick }: Props) {
+export function DayCell({ day, selected, onBookingClick, onDayClick }: Props) {
   const base = 'min-h-24 p-1 border-b border-r border-slate-100 dark:border-slate-800'
-  const bg = !day.isCurrentMonth
-    ? 'bg-slate-50 dark:bg-slate-950'
-    : day.isPeakSeason
-      ? 'bg-sky-50 dark:bg-sky-950/40'
-      : 'bg-white dark:bg-slate-900'
+  const bg = selected
+    ? 'bg-blue-50 dark:bg-blue-950/40'
+    : !day.isCurrentMonth
+      ? 'bg-slate-50 dark:bg-slate-950'
+      : day.isPeakSeason
+        ? 'bg-sky-50 dark:bg-sky-950/40'
+        : 'bg-white dark:bg-slate-900'
 
   return (
     <div

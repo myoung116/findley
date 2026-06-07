@@ -1,10 +1,11 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { format, addMonths, subMonths } from 'date-fns'
 import { buildCalendarGrid, type CalendarBooking } from '@/lib/calendar/utils'
 import { DayCell } from './DayCell'
 import { BookingDetailModal } from './BookingDetailModal'
+import { DayDetailPanel } from './DayDetailPanel'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import type { UserRole } from '@/lib/supabase/types'
 
@@ -27,6 +28,13 @@ const DAY_HEADERS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 export function CalendarClient({ bookings, rooms, role, userName }: Props) {
   const [current, setCurrent] = useState(new Date())
   const [selectedBooking, setSelectedBooking] = useState<CalendarBooking | null>(null)
+  const [selectedDay, setSelectedDay] = useState<Date | null>(null)
+  const panelRef = useRef<HTMLDivElement>(null)
+
+  function handleDayClick(date: Date) {
+    setSelectedDay(prev => prev?.toDateString() === date.toDateString() ? null : date)
+    setTimeout(() => panelRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 50)
+  }
 
   const showRoomDetail = role === 'papa' || role === 'principal'
   const year = current.getFullYear()
@@ -119,6 +127,8 @@ export function CalendarClient({ bookings, rooms, role, userName }: Props) {
                 day={day}
                 showRoomDetail={showRoomDetail}
                 onBookingClick={setSelectedBooking}
+                onDayClick={handleDayClick}
+                selected={selectedDay?.toDateString() === day.date.toDateString()}
               />
             ))}
           </div>
@@ -129,6 +139,18 @@ export function CalendarClient({ bookings, rooms, role, userName }: Props) {
             Showing confirmed bookings only
           </p>
         )}
+
+        <div ref={panelRef}>
+          {selectedDay && (
+            <DayDetailPanel
+              date={selectedDay}
+              bookings={bookings}
+              rooms={rooms}
+              showRoomDetail={showRoomDetail}
+              onClose={() => setSelectedDay(null)}
+            />
+          )}
+        </div>
       </div>
 
       <BookingDetailModal
