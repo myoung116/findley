@@ -18,7 +18,7 @@ interface Props {
 export function BookingTypeStep({ value, onChange }: Props) {
   return (
     <div className="space-y-3">
-      <h2 className="text-base font-semibold text-slate-700">Select booking type</h2>
+      <h2 className="text-base font-semibold text-slate-700 dark:text-slate-200">Select booking type</h2>
       {BOOKING_TYPES.map(type => (
         <button
           key={type}
@@ -27,13 +27,13 @@ export function BookingTypeStep({ value, onChange }: Props) {
           className={`
             w-full text-left p-4 rounded-xl border-2 transition-all
             ${value === type
-              ? 'border-blue-500 bg-blue-50'
-              : 'border-slate-200 bg-white hover:border-slate-300'
+              ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/50'
+              : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 hover:border-slate-300 dark:hover:border-slate-500'
             }
           `}
         >
-          <p className="font-medium text-sm text-slate-800">{BOOKING_TYPE_LABELS[type]}</p>
-          <p className="text-xs text-slate-500 mt-0.5">{BOOKING_TYPE_DESCRIPTIONS[type]}</p>
+          <p className="font-medium text-sm text-slate-800 dark:text-slate-100">{BOOKING_TYPE_LABELS[type]}</p>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{BOOKING_TYPE_DESCRIPTIONS[type]}</p>
         </button>
       ))}
     </div>

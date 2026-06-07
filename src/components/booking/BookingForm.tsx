@@ -85,17 +85,17 @@ export function BookingForm() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="bg-white border-b border-slate-200 px-4 py-3 flex items-center gap-3">
-        <a href="/" className="text-slate-400 hover:text-slate-600 text-lg">←</a>
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+      <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 px-4 py-3 flex items-center gap-3">
+        <a href="/" className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg">←</a>
         <div>
-          <h1 className="text-lg font-semibold text-slate-800">Request a Stay</h1>
-          <p className="text-xs text-slate-400">Step {stepIndex + 1} of {STEPS.length}</p>
+          <h1 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Request a Stay</h1>
+          <p className="text-xs text-slate-400 dark:text-slate-500">Step {stepIndex + 1} of {STEPS.length}</p>
         </div>
       </header>
 
       {/* Progress bar */}
-      <div className="h-1 bg-slate-100">
+      <div className="h-1 bg-slate-100 dark:bg-slate-800">
         <div
           className="h-1 bg-blue-500 transition-all"
           style={{ width: `${((stepIndex + 1) / STEPS.length) * 100}%` }}
@@ -139,42 +139,42 @@ export function BookingForm() {
 
         {step === 'confirm' && bookingType && (
           <div className="space-y-4">
-            <h2 className="text-base font-semibold text-slate-700">Review your request</h2>
+            <h2 className="text-base font-semibold text-slate-700 dark:text-slate-200">Review your request</h2>
 
-            <div className="bg-white rounded-2xl border border-slate-200 divide-y divide-slate-100">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 divide-y divide-slate-100 dark:divide-slate-800">
               <div className="px-4 py-3 flex justify-between text-sm">
-                <span className="text-slate-400">Type</span>
-                <span className="font-medium text-slate-700">{BOOKING_TYPE_LABELS[bookingType]}</span>
+                <span className="text-slate-400 dark:text-slate-500">Type</span>
+                <span className="font-medium text-slate-700 dark:text-slate-200">{BOOKING_TYPE_LABELS[bookingType]}</span>
               </div>
               <div className="px-4 py-3 flex justify-between text-sm">
-                <span className="text-slate-400">Dates</span>
-                <span className="font-medium text-slate-700">
+                <span className="text-slate-400 dark:text-slate-500">Dates</span>
+                <span className="font-medium text-slate-700 dark:text-slate-200">
                   {format(parseISO(startDate), 'MMM d')} – {format(parseISO(endDate), 'MMM d, yyyy')}
                 </span>
               </div>
               <div className="px-4 py-3 flex justify-between text-sm">
-                <span className="text-slate-400">Rooms</span>
-                <span className="font-medium text-slate-700">{selectedRoomIds.length} selected</span>
+                <span className="text-slate-400 dark:text-slate-500">Rooms</span>
+                <span className="font-medium text-slate-700 dark:text-slate-200">{selectedRoomIds.length} selected</span>
               </div>
               <div className="px-4 py-3 flex justify-between text-sm">
-                <span className="text-slate-400">Guests</span>
-                <span className="font-medium text-slate-700">{guests.length}</span>
+                <span className="text-slate-400 dark:text-slate-500">Guests</span>
+                <span className="font-medium text-slate-700 dark:text-slate-200">{guests.length}</span>
               </div>
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-slate-700 mb-1">Notes (optional)</label>
+              <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Notes (optional)</label>
               <textarea
                 value={notes}
                 onChange={e => setNotes(e.target.value)}
                 rows={3}
                 placeholder="Anything the family should know about this visit…"
-                className="w-full border border-slate-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
             </div>
 
             {error && (
-              <div className="bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-4 py-3">
+              <div className="bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-700 text-red-700 dark:text-red-300 text-sm rounded-lg px-4 py-3">
                 {error}
               </div>
             )}
@@ -187,7 +187,7 @@ export function BookingForm() {
             <button
               type="button"
               onClick={back}
-              className="flex-1 border border-slate-300 text-slate-600 rounded-xl py-2.5 text-sm font-medium hover:bg-slate-50 transition-colors"
+              className="flex-1 border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 rounded-xl py-2.5 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
             >
               Back
             </button>

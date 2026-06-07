@@ -39,17 +39,17 @@ export function GuestStep({
 
   return (
     <div className="space-y-4">
-      <h2 className="text-base font-semibold text-slate-700">Guests</h2>
+      <h2 className="text-base font-semibold text-slate-700 dark:text-slate-200">Guests</h2>
 
       <div className="space-y-3">
         {guests.map((guest, i) => (
-          <div key={i} className="bg-slate-50 rounded-xl p-3 space-y-2">
+          <div key={i} className="bg-slate-50 dark:bg-slate-800 rounded-xl p-3 space-y-2">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-medium text-slate-500">Guest {i + 1}</span>
+              <span className="text-xs font-medium text-slate-500 dark:text-slate-400">Guest {i + 1}</span>
               <button
                 type="button"
                 onClick={() => removeGuest(i)}
-                className="text-xs text-red-400 hover:text-red-600"
+                className="text-xs text-red-400 hover:text-red-600 dark:hover:text-red-300"
               >
                 Remove
               </button>
@@ -59,14 +59,14 @@ export function GuestStep({
               placeholder="Full name"
               value={guest.name}
               onChange={e => updateGuest(i, 'name', e.target.value)}
-              className="w-full border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
             <input
               type="text"
               placeholder="Relationship (e.g. spouse, friend)"
               value={guest.relationship}
               onChange={e => updateGuest(i, 'relationship', e.target.value)}
-              className="w-full border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
         ))}
@@ -75,12 +75,12 @@ export function GuestStep({
       <button
         type="button"
         onClick={addGuest}
-        className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+        className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium"
       >
         + Add guest
       </button>
 
-      <div className="border-t border-slate-100 pt-4">
+      <div className="border-t border-slate-100 dark:border-slate-700 pt-4">
         <label className="flex items-start gap-3 cursor-pointer">
           <input
             type="checkbox"
@@ -88,7 +88,7 @@ export function GuestStep({
             onChange={e => onAcknowledgeChange(e.target.checked)}
             className="mt-0.5 accent-blue-600"
           />
-          <span className="text-sm text-slate-600">
+          <span className="text-sm text-slate-600 dark:text-slate-300">
             I understand that I am responsible for the conduct and care of all guests during this stay,
             including any damages or issues that arise.
           </span>

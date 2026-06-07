@@ -92,11 +92,11 @@ export default async function AdminPage() {
   const notifications = (notificationsRaw ?? []) as NotifRow[]
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <header className="bg-white border-b border-slate-200 px-4 py-3 flex items-center justify-between">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+      <header className="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-700 px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <a href="/" className="text-slate-400 hover:text-slate-600 text-lg">←</a>
-          <h1 className="text-lg font-semibold text-slate-800">Admin</h1>
+          <a href="/" className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-lg">←</a>
+          <h1 className="text-lg font-semibold text-slate-800 dark:text-slate-100">Admin</h1>
         </div>
       </header>
 
@@ -104,45 +104,45 @@ export default async function AdminPage() {
 
         {/* Conflict Queue */}
         <section>
-          <h2 className="text-base font-semibold text-slate-700 mb-3">
+          <h2 className="text-base font-semibold text-slate-700 dark:text-slate-200 mb-3">
             Conflict Queue
             {conflicts.length > 0 && (
-              <span className="ml-2 text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-medium">
+              <span className="ml-2 text-xs bg-red-100 dark:bg-red-900/50 text-red-600 dark:text-red-300 px-2 py-0.5 rounded-full font-medium">
                 {conflicts.length} open
               </span>
             )}
           </h2>
 
           {conflicts.length === 0 ? (
-            <div className="bg-white rounded-2xl border border-slate-200 p-6 text-center text-sm text-slate-400">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 text-center text-sm text-slate-400 dark:text-slate-500">
               No open conflicts
             </div>
           ) : (
             <div className="space-y-3">
               {conflicts.map(conflict => (
-                <div key={conflict.id} className="bg-white rounded-2xl border border-slate-200 p-4">
+                <div key={conflict.id} className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 p-4">
                   <div className="flex items-start justify-between mb-3">
-                    <span className="text-xs text-slate-400">
+                    <span className="text-xs text-slate-400 dark:text-slate-500">
                       Flagged {format(parseISO(conflict.created_at), 'MMM d, yyyy')}
                     </span>
-                    <span className="text-xs bg-yellow-100 text-yellow-700 px-2 py-0.5 rounded-full font-medium">
+                    <span className="text-xs bg-yellow-100 dark:bg-yellow-900/50 text-yellow-700 dark:text-yellow-300 px-2 py-0.5 rounded-full font-medium">
                       Needs resolution
                     </span>
                   </div>
                   <div className="grid grid-cols-2 gap-3">
                     {[conflict.booking_a, conflict.booking_b].map((b, i) => b && (
-                      <div key={i} className="bg-slate-50 rounded-xl p-3">
-                        <p className="font-medium text-sm text-slate-800">{b.users?.name ?? 'Unknown'}</p>
-                        <p className="text-xs text-slate-500 mt-0.5">
+                      <div key={i} className="bg-slate-50 dark:bg-slate-800 rounded-xl p-3">
+                        <p className="font-medium text-sm text-slate-800 dark:text-slate-100">{b.users?.name ?? 'Unknown'}</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                           {format(parseISO(b.start_date), 'MMM d')} – {format(parseISO(b.end_date), 'MMM d, yyyy')}
                         </p>
-                        <p className="text-xs text-slate-400 mt-0.5">
+                        <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
                           {BOOKING_TYPE_LABELS[b.booking_type as BookingType] ?? b.booking_type}
                         </p>
                       </div>
                     ))}
                   </div>
-                  <p className="text-xs text-slate-400 mt-3">
+                  <p className="text-xs text-slate-400 dark:text-slate-500 mt-3">
                     Conflicts are resolved socially — coordinate directly with the principals involved.
                   </p>
                 </div>
@@ -153,30 +153,30 @@ export default async function AdminPage() {
 
         {/* Waiver Leaderboard */}
         <section>
-          <h2 className="text-base font-semibold text-slate-700 mb-3">Waiver Priority</h2>
-          <p className="text-xs text-slate-400 mb-3">Lower score = higher priority for open/shared bookings. Recalculated every Monday.</p>
+          <h2 className="text-base font-semibold text-slate-700 dark:text-slate-200 mb-3">Waiver Priority</h2>
+          <p className="text-xs text-slate-400 dark:text-slate-500 mb-3">Lower score = higher priority for open/shared bookings. Recalculated every Monday.</p>
 
           {scores.length === 0 ? (
-            <div className="bg-white rounded-2xl border border-slate-200 p-6 text-center text-sm text-slate-400">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 text-center text-sm text-slate-400 dark:text-slate-500">
               No scores calculated yet
             </div>
           ) : (
-            <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
-              <div className="grid grid-cols-4 text-xs font-medium text-slate-400 px-4 py-2 border-b border-slate-100">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+              <div className="grid grid-cols-4 text-xs font-medium text-slate-400 dark:text-slate-500 px-4 py-2 border-b border-slate-100 dark:border-slate-800">
                 <span>Principal</span>
                 <span className="text-right">Score</span>
                 <span className="text-right">Bedroom nights</span>
                 <span className="text-right">Requests</span>
               </div>
               {scores.map((row, i) => (
-                <div key={i} className="grid grid-cols-4 px-4 py-3 border-b border-slate-50 last:border-0 text-sm">
+                <div key={i} className="grid grid-cols-4 px-4 py-3 border-b border-slate-50 dark:border-slate-800 last:border-0 text-sm">
                   <div>
-                    <p className="font-medium text-slate-800">{row.users?.name}</p>
-                    <p className="text-xs text-slate-400">{row.users?.family_branch}</p>
+                    <p className="font-medium text-slate-800 dark:text-slate-100">{row.users?.name}</p>
+                    <p className="text-xs text-slate-400 dark:text-slate-500">{row.users?.family_branch}</p>
                   </div>
-                  <p className="text-right font-mono font-semibold text-slate-700">{row.score.toFixed(1)}</p>
-                  <p className="text-right text-slate-500">{row.nights_ttm}</p>
-                  <p className="text-right text-slate-500">{row.requests_ttm}</p>
+                  <p className="text-right font-mono font-semibold text-slate-700 dark:text-slate-200">{row.score.toFixed(1)}</p>
+                  <p className="text-right text-slate-500 dark:text-slate-400">{row.nights_ttm}</p>
+                  <p className="text-right text-slate-500 dark:text-slate-400">{row.requests_ttm}</p>
                 </div>
               ))}
             </div>
@@ -185,23 +185,23 @@ export default async function AdminPage() {
 
         {/* Notification Log */}
         <section>
-          <h2 className="text-base font-semibold text-slate-700 mb-3">Notification Log</h2>
+          <h2 className="text-base font-semibold text-slate-700 dark:text-slate-200 mb-3">Notification Log</h2>
 
           {notifications.length === 0 ? (
-            <div className="bg-white rounded-2xl border border-slate-200 p-6 text-center text-sm text-slate-400">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 p-6 text-center text-sm text-slate-400 dark:text-slate-500">
               No notifications yet
             </div>
           ) : (
-            <div className="bg-white rounded-2xl border border-slate-200 overflow-hidden">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">
               {notifications.map(n => (
-                <div key={n.id} className="px-4 py-3 border-b border-slate-50 last:border-0 flex items-start justify-between gap-4">
+                <div key={n.id} className="px-4 py-3 border-b border-slate-50 dark:border-slate-800 last:border-0 flex items-start justify-between gap-4">
                   <div>
-                    <p className="text-sm font-medium text-slate-700">{n.users?.name}</p>
-                    <p className="text-xs text-slate-400 mt-0.5">{n.type.replace(/_/g, ' ')}</p>
+                    <p className="text-sm font-medium text-slate-700 dark:text-slate-200">{n.users?.name}</p>
+                    <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">{n.type.replace(/_/g, ' ')}</p>
                   </div>
                   <div className="text-right shrink-0">
-                    <p className="text-xs text-slate-400">{format(parseISO(n.created_at), 'MMM d, h:mm a')}</p>
-                    <span className={`text-xs px-1.5 py-0.5 rounded-full ${n.sent_at ? 'bg-green-100 text-green-600' : 'bg-slate-100 text-slate-400'}`}>
+                    <p className="text-xs text-slate-400 dark:text-slate-500">{format(parseISO(n.created_at), 'MMM d, h:mm a')}</p>
+                    <span className={`text-xs px-1.5 py-0.5 rounded-full ${n.sent_at ? 'bg-green-100 dark:bg-green-900/50 text-green-600 dark:text-green-300' : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500'}`}>
                       {n.sent_at ? 'sent' : 'queued'}
                     </span>
                   </div>
