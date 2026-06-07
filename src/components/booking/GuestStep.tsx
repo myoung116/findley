@@ -1,0 +1,99 @@
+'use client'
+
+interface Guest {
+  name: string
+  relationship: string
+}
+
+interface Props {
+  guests: Guest[]
+  guestCount: number
+  acknowledged: boolean
+  onGuestsChange: (guests: Guest[]) => void
+  onGuestCountChange: (count: number) => void
+  onAcknowledgeChange: (checked: boolean) => void
+}
+
+export function GuestStep({
+  guests,
+  guestCount,
+  acknowledged,
+  onGuestsChange,
+  onGuestCountChange,
+  onAcknowledgeChange,
+}: Props) {
+  function addGuest() {
+    onGuestsChange([...guests, { name: '', relationship: '' }])
+    onGuestCountChange(guestCount + 1)
+  }
+
+  function removeGuest(index: number) {
+    onGuestsChange(guests.filter((_, i) => i !== index))
+    onGuestCountChange(Math.max(0, guestCount - 1))
+  }
+
+  function updateGuest(index: number, field: keyof Guest, value: string) {
+    const updated = guests.map((g, i) => i === index ? { ...g, [field]: value } : g)
+    onGuestsChange(updated)
+  }
+
+  return (
+    <div className="space-y-4">
+      <h2 className="text-base font-semibold text-slate-700">Guests</h2>
+
+      <div className="space-y-3">
+        {guests.map((guest, i) => (
+          <div key={i} className="bg-slate-50 rounded-xl p-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-medium text-slate-500">Guest {i + 1}</span>
+              <button
+                type="button"
+                onClick={() => removeGuest(i)}
+                className="text-xs text-red-400 hover:text-red-600"
+              >
+                Remove
+              </button>
+            </div>
+            <input
+              type="text"
+              placeholder="Full name"
+              value={guest.name}
+              onChange={e => updateGuest(i, 'name', e.target.value)}
+              className="w-full border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+            <input
+              type="text"
+              placeholder="Relationship (e.g. spouse, friend)"
+              value={guest.relationship}
+              onChange={e => updateGuest(i, 'relationship', e.target.value)}
+              className="w-full border border-slate-200 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+        ))}
+      </div>
+
+      <button
+        type="button"
+        onClick={addGuest}
+        className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+      >
+        + Add guest
+      </button>
+
+      <div className="border-t border-slate-100 pt-4">
+        <label className="flex items-start gap-3 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={acknowledged}
+            onChange={e => onAcknowledgeChange(e.target.checked)}
+            className="mt-0.5 accent-blue-600"
+          />
+          <span className="text-sm text-slate-600">
+            I understand that I am responsible for the conduct and care of all guests during this stay,
+            including any damages or issues that arise.
+          </span>
+        </label>
+      </div>
+    </div>
+  )
+}
