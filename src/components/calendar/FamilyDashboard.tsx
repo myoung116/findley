@@ -21,68 +21,64 @@ export function FamilyDashboard({ userName, familyBranch, stats, showWaiver }: P
   const { totalNights, totalVisits, ttmNights, ttmVisits, waiverScore, upcomingBookings, pastBookings } = stats
 
   return (
-    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm mt-4 overflow-hidden">
-      {/* Header */}
-      <div className="px-5 py-4 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between">
-        <div>
-          <h2 className="font-semibold text-slate-800 dark:text-slate-100">{userName}</h2>
-          <p className="text-xs text-slate-400 dark:text-slate-500">{familyBranch}</p>
-        </div>
-        <span className="text-xs text-slate-400 dark:text-slate-500">Your stats</span>
+    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm overflow-hidden">
+      {/* Identity */}
+      <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800">
+        <p className="font-semibold text-slate-800 dark:text-slate-100 text-sm">{userName}</p>
+        <p className="text-xs text-slate-400 dark:text-slate-500">{familyBranch}</p>
       </div>
 
-      {/* Stat cards */}
-      <div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-y md:divide-y-0 divide-slate-100 dark:divide-slate-800 border-b border-slate-100 dark:border-slate-800">
-        <StatCard label="Total nights" value={totalNights} />
-        <StatCard label="Total visits" value={totalVisits} />
-        <StatCard label="Nights (12 mo)" value={ttmNights} />
-        <StatCard label="Visits (12 mo)" value={ttmVisits} />
+      {/* Stat grid */}
+      <div className="grid grid-cols-2 divide-x divide-y divide-slate-100 dark:divide-slate-800 border-b border-slate-100 dark:border-slate-800">
+        <StatCell label="Total nights" value={totalNights} />
+        <StatCell label="Total visits" value={totalVisits} />
+        <StatCell label="Nights (12 mo)" value={ttmNights} />
+        <StatCell label="Visits (12 mo)" value={ttmVisits} />
       </div>
 
+      {/* Waiver score */}
       {showWaiver && waiverScore !== null && (
-        <div className="px-5 py-3 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between text-sm">
-          <span className="text-slate-500 dark:text-slate-400">Waiver score</span>
-          <span className="font-mono font-semibold text-slate-700 dark:text-slate-200">
-            {waiverScore.toFixed(1)}
-            <span className="text-xs font-normal text-slate-400 dark:text-slate-500 ml-1">lower = higher priority</span>
-          </span>
+        <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800">
+          <p className="text-xs text-slate-400 dark:text-slate-500 mb-0.5">Waiver score</p>
+          <div className="flex items-baseline gap-1.5">
+            <span className="font-mono font-bold text-lg text-slate-800 dark:text-slate-100">{waiverScore.toFixed(1)}</span>
+            <span className="text-xs text-slate-400 dark:text-slate-500">lower = higher priority</span>
+          </div>
         </div>
       )}
 
-      <div className="grid grid-cols-1 md:grid-cols-2 divide-y md:divide-y-0 md:divide-x divide-slate-100 dark:divide-slate-800">
-        {/* Upcoming */}
-        <div className="px-5 py-4">
-          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-3">Upcoming Stays</p>
-          {upcomingBookings.length === 0 ? (
-            <p className="text-sm text-slate-400 dark:text-slate-500">No upcoming stays.</p>
-          ) : (
-            <div className="space-y-2">
-              {upcomingBookings.map(b => <BookingRow key={b.id} booking={b} />)}
-            </div>
-          )}
-        </div>
+      {/* Upcoming */}
+      <div className="px-4 py-3 border-b border-slate-100 dark:border-slate-800">
+        <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">Upcoming</p>
+        {upcomingBookings.length === 0 ? (
+          <p className="text-xs text-slate-400 dark:text-slate-500">No upcoming stays.</p>
+        ) : (
+          <div className="space-y-2">
+            {upcomingBookings.map(b => <BookingRow key={b.id} booking={b} />)}
+          </div>
+        )}
+      </div>
 
-        {/* Past */}
-        <div className="px-5 py-4">
-          <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-3">Past Stays</p>
-          {pastBookings.length === 0 ? (
-            <p className="text-sm text-slate-400 dark:text-slate-500">No past stays yet.</p>
-          ) : (
-            <div className="space-y-2">
-              {pastBookings.map(b => <BookingRow key={b.id} booking={b} />)}
-            </div>
-          )}
-        </div>
+      {/* Past */}
+      <div className="px-4 py-3">
+        <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">Past Stays</p>
+        {pastBookings.length === 0 ? (
+          <p className="text-xs text-slate-400 dark:text-slate-500">No past stays yet.</p>
+        ) : (
+          <div className="space-y-2">
+            {pastBookings.map(b => <BookingRow key={b.id} booking={b} />)}
+          </div>
+        )}
       </div>
     </div>
   )
 }
 
-function StatCard({ label, value }: { label: string; value: number }) {
+function StatCell({ label, value }: { label: string; value: number }) {
   return (
-    <div className="px-5 py-4 text-center">
-      <p className="text-2xl font-bold text-slate-800 dark:text-slate-100">{value}</p>
-      <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">{label}</p>
+    <div className="px-4 py-3 text-center">
+      <p className="text-xl font-bold text-slate-800 dark:text-slate-100">{value}</p>
+      <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5 leading-tight">{label}</p>
     </div>
   )
 }
@@ -91,20 +87,14 @@ function BookingRow({ booking }: { booking: DashboardBooking }) {
   const style = BOOKING_TYPE_STYLES[booking.bookingType]
   const statusColor = STATUS_COLORS[booking.status] ?? STATUS_COLORS.draft
   return (
-    <div className="flex items-center justify-between py-2 border-b border-slate-50 dark:border-slate-800 last:border-0 gap-3">
-      <div className="flex-1 min-w-0">
-        <p className="text-sm text-slate-700 dark:text-slate-200">
-          {format(parseISO(booking.startDate), 'MMM d')} – {format(parseISO(booking.endDate), 'MMM d, yyyy')}
-        </p>
-        <span className={`text-xs px-1.5 py-0.5 rounded-full border mt-0.5 inline-block ${style.bg} ${style.text}`}>
-          {style.label}
-        </span>
-      </div>
-      <div className="text-right shrink-0 space-y-0.5">
-        <p className="text-xs text-slate-500 dark:text-slate-400">{booking.nights}n · {booking.guestCount} guests</p>
-        <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${statusColor}`}>
-          {booking.status}
-        </span>
+    <div className="py-1.5 border-b border-slate-50 dark:border-slate-800 last:border-0">
+      <p className="text-xs font-medium text-slate-700 dark:text-slate-200">
+        {format(parseISO(booking.startDate), 'MMM d')} – {format(parseISO(booking.endDate), 'MMM d')}
+      </p>
+      <div className="flex items-center gap-1.5 mt-0.5 flex-wrap">
+        <span className={`text-xs px-1.5 py-0.5 rounded-full border ${style.bg} ${style.text}`}>{style.label}</span>
+        <span className={`text-xs px-1.5 py-0.5 rounded-full font-medium ${statusColor}`}>{booking.status}</span>
+        <span className="text-xs text-slate-400 dark:text-slate-500">{booking.nights}n</span>
       </div>
     </div>
   )
