@@ -22,7 +22,7 @@ export async function getRoomAvailability(
   const { data: rooms } = await supabase
     .from('rooms')
     .select('id, name, bed_count, max_occupancy, attributes')
-    .order('name')
+    .order('sort_order')
 
   if (!rooms) return []
 

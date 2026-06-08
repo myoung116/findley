@@ -78,7 +78,7 @@ export default async function HomePage() {
   const { data: rooms } = await supabase
     .from('rooms')
     .select('id, name, bed_count, max_occupancy, attributes')
-    .order('name')
+    .order('sort_order')
 
   // Dashboard: user's own bookings (all time, confirmed)
   const { data: myBookingsRaw } = await supabase
