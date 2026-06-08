@@ -1,7 +1,10 @@
 'use client'
 
+import { useState, useTransition } from 'react'
+import { useRouter } from 'next/navigation'
 import { format, parseISO } from 'date-fns'
 import { BOOKING_TYPE_STYLES } from '@/lib/calendar/utils'
+import { approveBooking } from '@/app/actions/approveBooking'
 import type { CalendarBooking } from '@/lib/calendar/utils'
 
 interface Room {
@@ -15,6 +18,7 @@ interface Props {
   booking: CalendarBooking | null
   rooms: Room[]
   showRoomDetail: boolean
+  canManageAll?: boolean
   onClose: () => void
 }
 
@@ -30,11 +34,25 @@ const STATUS_COLORS = {
   cancelled: 'text-slate-400 bg-slate-100 dark:bg-slate-700 dark:text-slate-500',
 }
 
-export function BookingDetailModal({ booking, rooms, showRoomDetail, onClose }: Props) {
+export function BookingDetailModal({ booking, rooms, showRoomDetail, canManageAll, onClose }: Props) {
+  const router = useRouter()
+  const [isPending, startTransition] = useTransition()
+  const [approveError, setApproveError] = useState<string | null>(null)
+
   if (!booking) return null
 
   const style = BOOKING_TYPE_STYLES[booking.bookingType]
   const bookedRooms = showRoomDetail ? rooms.filter(r => booking.roomsRequested.includes(r.id)) : []
+  const canApprove = canManageAll && booking.status === 'pending'
+
+  function handleApprove() {
+    setApproveError(null)
+    startTransition(async () => {
+      const result = await approveBooking(booking!.id)
+      if (result.success) { router.refresh(); onClose() }
+      else setApproveError(result.error ?? 'Failed to approve')
+    })
+  }
 
   return (
     <div
@@ -85,6 +103,19 @@ export function BookingDetailModal({ booking, rooms, showRoomDetail, onClose }: 
             </div>
           )}
         </div>
+
+        {canApprove && (
+          <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800 space-y-2">
+            {approveError && <p className="text-xs text-red-500">{approveError}</p>}
+            <button
+              onClick={handleApprove}
+              disabled={isPending}
+              className="w-full bg-green-600 text-white rounded-xl py-2.5 text-sm font-medium hover:bg-green-700 disabled:opacity-40 transition-colors"
+            >
+              {isPending ? 'Approving…' : 'Approve Booking'}
+            </button>
+          </div>
+        )}
       </div>
     </div>
   )

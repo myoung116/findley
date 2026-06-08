@@ -4,6 +4,7 @@ import { format, parseISO } from 'date-fns'
 import { BOOKING_TYPE_LABELS } from '@/lib/booking/dates'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { UserManagement, type UserRow } from './UserManagement'
+import { PendingBookings, type PendingBookingRow } from './PendingBookings'
 import type { BookingType, UserRole } from '@/lib/supabase/types'
 
 type ConflictWithBookings = {
@@ -56,6 +57,15 @@ export default async function AdminPage() {
 
   type RawUser = { id: string; name: string; email: string; family_branch: string; role: UserRole; created_at: string }
   const allUsers = (usersRaw ?? []) as RawUser[]
+
+  // Pending bookings awaiting approval
+  const { data: pendingRaw } = await supabase
+    .from('bookings')
+    .select('id, start_date, end_date, booking_type, guest_count, notes, created_at, users(name, family_branch)')
+    .eq('status', 'pending')
+    .order('created_at', { ascending: true })
+
+  const pendingBookings = (pendingRaw ?? []) as PendingBookingRow[]
 
   // Open conflicts with booking details
   const { data: conflictsRaw } = await supabase
@@ -116,6 +126,9 @@ export default async function AdminPage() {
 
         {/* User Management */}
         <UserManagement users={allUsers as UserRow[]} currentUserId={user.id} />
+
+        {/* Pending Bookings */}
+        <PendingBookings bookings={pendingBookings} />
 
         {/* Conflict Queue */}
         <section>

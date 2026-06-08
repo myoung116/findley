@@ -269,6 +269,7 @@ export function CalendarClient({ bookings, rooms, role, userName, familyBranch, 
         booking={selectedBooking}
         rooms={rooms}
         showRoomDetail={showRoomDetail}
+        canManageAll={role === 'admin' || role === 'papa'}
         onClose={() => setSelectedBooking(null)}
       />
     </div>
