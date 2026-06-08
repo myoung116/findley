@@ -8,40 +8,63 @@ interface Props {
   day: CalendarDay
   showRoomDetail?: boolean
   selected?: boolean
+  inDragRange?: boolean
+  isDragStart?: boolean
+  isDragEnd?: boolean
   onBookingClick?: (booking: CalendarBooking) => void
   onDayClick?: (date: Date) => void
+  onMouseDown?: (date: Date) => void
+  onMouseEnter?: (date: Date) => void
+  onMouseUp?: (date: Date) => void
 }
 
-export function DayCell({ day, selected, onBookingClick, onDayClick }: Props) {
-  const base = 'min-h-24 p-1 border-b border-r border-slate-100 dark:border-slate-800'
-  const bg = selected
-    ? 'bg-blue-50 dark:bg-blue-950/40'
-    : !day.isCurrentMonth
-      ? 'bg-slate-50 dark:bg-slate-950'
-      : day.isPeakSeason
-        ? 'bg-sky-50 dark:bg-sky-950/40'
-        : 'bg-white dark:bg-slate-900'
+export function DayCell({ day, selected, inDragRange, isDragStart, isDragEnd, onBookingClick, onDayClick, onMouseDown, onMouseEnter, onMouseUp }: Props) {
+  const base = 'min-h-24 p-1 border-b border-r border-slate-100 dark:border-slate-800 select-none'
+
+  let bg: string
+  if (isDragStart || isDragEnd) {
+    bg = 'bg-blue-500 dark:bg-blue-600'
+  } else if (inDragRange) {
+    bg = 'bg-blue-100 dark:bg-blue-900/50'
+  } else if (selected) {
+    bg = 'bg-blue-50 dark:bg-blue-950/40'
+  } else if (!day.isCurrentMonth) {
+    bg = 'bg-slate-50 dark:bg-slate-950'
+  } else if (day.isPeakSeason) {
+    bg = 'bg-sky-50 dark:bg-sky-950/40'
+  } else {
+    bg = 'bg-white dark:bg-slate-900'
+  }
+
+  const dateNumColor = isDragStart || isDragEnd
+    ? 'text-white'
+    : day.isToday
+      ? ''
+      : day.isCurrentMonth
+        ? 'text-slate-700 dark:text-slate-200'
+        : 'text-slate-300 dark:text-slate-600'
 
   return (
     <div
-      className={`${base} ${bg} cursor-pointer hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors`}
+      className={`${base} ${bg} cursor-pointer hover:brightness-95 transition-colors`}
       onClick={() => onDayClick?.(day.date)}
+      onMouseDown={e => { e.preventDefault(); onMouseDown?.(day.date) }}
+      onMouseEnter={() => onMouseEnter?.(day.date)}
+      onMouseUp={() => onMouseUp?.(day.date)}
     >
       <div className="flex items-center justify-between mb-1">
         <span
           className={`
             text-xs font-medium w-6 h-6 flex items-center justify-center rounded-full
-            ${day.isToday
+            ${day.isToday && !(isDragStart || isDragEnd)
               ? 'bg-blue-600 text-white'
-              : day.isCurrentMonth
-                ? 'text-slate-700 dark:text-slate-200'
-                : 'text-slate-300 dark:text-slate-600'
+              : dateNumColor
             }
           `}
         >
           {format(day.date, 'd')}
         </span>
-        {day.isPeakSeason && day.isCurrentMonth && (
+        {day.isPeakSeason && day.isCurrentMonth && !(isDragStart || isDragEnd) && (
           <span className="text-[10px] text-sky-500 dark:text-sky-400 font-medium">peak</span>
         )}
       </div>

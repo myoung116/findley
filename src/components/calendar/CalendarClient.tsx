@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useRef } from 'react'
-import { format, addMonths, subMonths } from 'date-fns'
+import { useState, useRef, useEffect } from 'react'
+import { format, addMonths, subMonths, isWithinInterval, min, max } from 'date-fns'
 import { buildCalendarGrid, type CalendarBooking } from '@/lib/calendar/utils'
 import { DayCell } from './DayCell'
 import { BookingDetailModal } from './BookingDetailModal'
@@ -55,9 +55,59 @@ export function CalendarClient({ bookings, rooms, role, userName, familyBranch, 
   }
 
   const [bookingInitialDate, setBookingInitialDate] = useState<string>('')
+  const [bookingInitialEndDate, setBookingInitialEndDate] = useState<string>('')
+
+  // Drag-to-select state
+  const [dragStart, setDragStart] = useState<Date | null>(null)
+  const [dragHover, setDragHover] = useState<Date | null>(null)
+  const isDragging = dragStart !== null
+
+  // Compute the highlighted range
+  const dragRange = dragStart && dragHover ? {
+    start: min([dragStart, dragHover]),
+    end: max([dragStart, dragHover]),
+  } : null
+
+  // Cancel drag if mouse is released outside the calendar
+  useEffect(() => {
+    function handleGlobalMouseUp() { setDragStart(null); setDragHover(null) }
+    window.addEventListener('mouseup', handleGlobalMouseUp)
+    return () => window.removeEventListener('mouseup', handleGlobalMouseUp)
+  }, [])
+
+  function handleDayMouseDown(date: Date) {
+    if (!showRoomDetail) return
+    setDragStart(date)
+    setDragHover(date)
+  }
+
+  function handleDayMouseEnter(date: Date) {
+    if (isDragging) setDragHover(date)
+  }
+
+  function handleDayMouseUp(date: Date) {
+    if (!isDragging) return
+    const start = min([dragStart!, date])
+    const end = max([dragStart!, date])
+    setDragStart(null)
+    setDragHover(null)
+
+    // Same day = single click → open day detail
+    if (start.toDateString() === end.toDateString()) {
+      handleDayClick(date)
+      return
+    }
+
+    // Multi-day drag → open booking form with range pre-filled
+    setBookingInitialDate(format(start, 'yyyy-MM-dd'))
+    setBookingInitialEndDate(format(end, 'yyyy-MM-dd'))
+    setPanelMode('booking')
+    scrollToPanel()
+  }
 
   function openBookingForm(date?: Date) {
     setBookingInitialDate(date ? format(date, 'yyyy-MM-dd') : '')
+    setBookingInitialEndDate('')
     setPanelMode('booking')
     scrollToPanel()
   }
@@ -149,16 +199,29 @@ export function CalendarClient({ bookings, rooms, role, userName, familyBranch, 
               ))}
             </div>
             <div className="grid grid-cols-7">
-              {days.map((day, i) => (
-                <DayCell
-                  key={i}
-                  day={day}
-                  showRoomDetail={showRoomDetail}
-                  onBookingClick={setSelectedBooking}
-                  onDayClick={handleDayClick}
-                  selected={selectedDay?.toDateString() === day.date.toDateString() && panelMode === 'day'}
-                />
-              ))}
+              {days.map((day, i) => {
+                const inRange = dragRange
+                  ? isWithinInterval(day.date, { start: dragRange.start, end: dragRange.end })
+                  : false
+                const isStart = dragRange ? day.date.toDateString() === dragRange.start.toDateString() : false
+                const isEnd = dragRange ? day.date.toDateString() === dragRange.end.toDateString() : false
+                return (
+                  <DayCell
+                    key={i}
+                    day={day}
+                    showRoomDetail={showRoomDetail}
+                    onBookingClick={setSelectedBooking}
+                    onDayClick={handleDayClick}
+                    onMouseDown={handleDayMouseDown}
+                    onMouseEnter={handleDayMouseEnter}
+                    onMouseUp={handleDayMouseUp}
+                    selected={selectedDay?.toDateString() === day.date.toDateString() && panelMode === 'day'}
+                    inDragRange={inRange && !isStart && !isEnd}
+                    isDragStart={isStart}
+                    isDragEnd={isEnd}
+                  />
+                )
+              })}
             </div>
           </div>
 
@@ -183,7 +246,7 @@ export function CalendarClient({ bookings, rooms, role, userName, familyBranch, 
             )}
             {panelMode === 'booking' && (
               <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm mt-4 overflow-hidden">
-                <BookingForm inline onClose={closePanel} initialStartDate={bookingInitialDate} />
+                <BookingForm inline onClose={closePanel} initialStartDate={bookingInitialDate} initialEndDate={bookingInitialEndDate} />
               </div>
             )}
           </div>
