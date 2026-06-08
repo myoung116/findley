@@ -7,7 +7,14 @@ import { BOOKING_TYPE_STYLES } from '@/lib/calendar/utils'
 import { ManageBookingModal, type ManageableBooking } from '@/components/booking/ManageBookingModal'
 import type { CalendarBooking } from '@/lib/calendar/utils'
 
-interface Room { id: string; name: string; bed_count: number; max_occupancy: number }
+interface RoomAttributes {
+  floor?: number
+  bathroom?: string
+  beds?: string[]
+  notes?: string
+}
+
+interface Room { id: string; name: string; bed_count: number; max_occupancy: number; attributes?: RoomAttributes }
 
 interface Props {
   date: Date
@@ -114,19 +121,7 @@ export function DayDetailPanel({ date, bookings, rooms, showRoomDetail, canManag
             <div>
               <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">Rooms</p>
               <div className="space-y-1">
-                {rooms.map(room => {
-                  const taken = occupiedRoomIds.has(room.id)
-                  return (
-                    <div key={room.id} className={`flex items-center justify-between text-xs px-2 py-1.5 rounded-lg ${
-                      taken
-                        ? 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400'
-                        : 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400'
-                    }`}>
-                      <span className="font-medium">{room.name}</span>
-                      <span className="opacity-70">{taken ? 'Occupied' : 'Open'}</span>
-                    </div>
-                  )
-                })}
+                {rooms.map(room => <RoomRow key={room.id} room={room} taken={occupiedRoomIds.has(room.id)} />)}
               </div>
             </div>
           )}
@@ -152,6 +147,57 @@ export function DayDetailPanel({ date, bookings, rooms, showRoomDetail, canManag
     </div>
     {managing && <ManageBookingModal booking={managing} onClose={() => setManaging(null)} />}
     </>
+  )
+}
+
+function RoomRow({ room, taken }: { room: Room; taken: boolean }) {
+  const [expanded, setExpanded] = useState(false)
+  const attrs = room.attributes ?? {}
+  const beds = attrs.beds ?? []
+
+  const bedCounts: Record<string, number> = {}
+  for (const bed of beds) bedCounts[bed] = (bedCounts[bed] ?? 0) + 1
+  const bedSummary = Object.entries(bedCounts)
+    .map(([type, count]) => `${count > 1 ? `${count}x ` : ''}${type.charAt(0).toUpperCase() + type.slice(1)}`)
+    .join(', ')
+
+  return (
+    <div className={`rounded-lg text-xs ${
+      taken
+        ? 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400'
+        : 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400'
+    }`}>
+      <div className="flex items-center justify-between px-2 py-1.5">
+        <span className="font-medium">{room.name}</span>
+        <div className="flex items-center gap-2">
+          <span className="opacity-70">{taken ? 'Occupied' : 'Open'}</span>
+          <button
+            type="button"
+            onClick={() => setExpanded(e => !e)}
+            className="opacity-60 hover:opacity-100 transition-opacity"
+            title="Room details"
+          >
+            {expanded ? '▲' : '▼'}
+          </button>
+        </div>
+      </div>
+      {expanded && (
+        <div className="px-2 pb-2 space-y-0.5 border-t border-current border-opacity-10">
+          {bedSummary && (
+            <p className="opacity-80"><span className="opacity-60">Beds: </span>{bedSummary}</p>
+          )}
+          {attrs.bathroom && (
+            <p className="opacity-80"><span className="opacity-60">Bathroom: </span>{attrs.bathroom === 'private' ? 'Attached private' : 'Shared'}</p>
+          )}
+          {attrs.floor !== undefined && (
+            <p className="opacity-80"><span className="opacity-60">Floor: </span>{attrs.floor === 0 ? 'Garage' : `Floor ${attrs.floor}`}</p>
+          )}
+          {attrs.notes && (
+            <p className="opacity-60 italic">{attrs.notes}</p>
+          )}
+        </div>
+      )}
+    </div>
   )
 }
 
