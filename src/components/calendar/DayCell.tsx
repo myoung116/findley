@@ -47,7 +47,7 @@ export function DayCell({ day, selected, inDragRange, isDragStart, isDragEnd, on
   return (
     <div
       className={`${base} ${bg} cursor-pointer hover:brightness-95 transition-colors`}
-      onClick={() => onDayClick?.(day.date)}
+      onClick={() => { if (!onMouseDown) onDayClick?.(day.date) }}
       onMouseDown={e => { e.preventDefault(); onMouseDown?.(day.date) }}
       onMouseEnter={() => onMouseEnter?.(day.date)}
       onMouseUp={() => onMouseUp?.(day.date)}
