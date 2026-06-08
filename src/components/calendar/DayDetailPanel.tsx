@@ -7,14 +7,14 @@ import { BOOKING_TYPE_STYLES } from '@/lib/calendar/utils'
 import { ManageBookingModal, type ManageableBooking } from '@/components/booking/ManageBookingModal'
 import type { CalendarBooking } from '@/lib/calendar/utils'
 
-interface RoomAttributes {
+export interface RoomAttributes {
   floor?: number
   bathroom?: string
   beds?: string[]
   notes?: string
 }
 
-interface Room { id: string; name: string; bed_count: number; max_occupancy: number; attributes?: RoomAttributes }
+interface Room { id: string; name: string; bed_count: number; max_occupancy: number; attributes?: RoomAttributes | null }
 
 interface Props {
   date: Date

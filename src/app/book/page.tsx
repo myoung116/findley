@@ -14,7 +14,7 @@ export default async function BookPage() {
     .eq('id', user.id)
     .single()
 
-  if (!profile || (profile.role !== 'principal' && profile.role !== 'papa')) {
+  if (!profile || (profile.role !== 'principal' && profile.role !== 'papa' && profile.role !== 'admin')) {
     redirect('/')
   }
 

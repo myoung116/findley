@@ -154,7 +154,7 @@ export default async function HomePage() {
   return (
     <CalendarClient
       bookings={bookings}
-      rooms={rooms ?? []}
+      rooms={(rooms ?? []) as Parameters<typeof CalendarClient>[0]['rooms']}
       role={role}
       userName={profile.name}
       familyBranch={profile.family_branch}

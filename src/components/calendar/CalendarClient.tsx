@@ -11,12 +11,14 @@ import { FamilyDashboard } from './FamilyDashboard'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import type { UserRole } from '@/lib/supabase/types'
 import type { DashboardStats } from '@/app/page'
+import type { RoomAttributes } from './DayDetailPanel'
 
 interface Room {
   id: string
   name: string
   bed_count: number
   max_occupancy: number
+  attributes?: RoomAttributes | null
 }
 
 interface Props {
@@ -257,7 +259,7 @@ export function CalendarClient({ bookings, rooms, role, userName, familyBranch, 
               userName={userName}
               familyBranch={familyBranch}
               stats={dashboard}
-              showWaiver={role === 'principal' || role === 'papa'}
+              showWaiver={role === 'principal' || role === 'papa' || role === 'admin'}
             />
           </div>
         </div>
