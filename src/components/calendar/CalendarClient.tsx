@@ -135,6 +135,11 @@ export function CalendarClient({ bookings, rooms, role, userName, familyBranch, 
             </a>
           )}
           <ThemeToggle />
+          <form action="/auth/signout" method="POST">
+            <button type="submit" className="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 px-2 py-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
+              Sign out
+            </button>
+          </form>
         </div>
       </header>
 
