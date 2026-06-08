@@ -3,7 +3,8 @@ import { createClient } from '@/lib/supabase/server'
 import { format, parseISO } from 'date-fns'
 import { BOOKING_TYPE_LABELS } from '@/lib/booking/dates'
 import { ThemeToggle } from '@/components/ThemeToggle'
-import type { BookingType } from '@/lib/supabase/types'
+import { UserManagement, type UserRow } from './UserManagement'
+import type { BookingType, UserRole } from '@/lib/supabase/types'
 
 type ConflictWithBookings = {
   id: string
@@ -43,9 +44,18 @@ export default async function AdminPage() {
     .from('users').select('role').eq('id', user.id).single()
   const profile = profileData as { role: string } | null
 
-  if (!profile || (profile.role !== 'principal' && profile.role !== 'papa')) {
+  if (!profile || profile.role !== 'admin') {
     redirect('/')
   }
+
+  // All users
+  const { data: usersRaw } = await supabase
+    .from('users')
+    .select('id, name, email, family_branch, role, created_at')
+    .order('created_at', { ascending: true })
+
+  type RawUser = { id: string; name: string; email: string; family_branch: string; role: UserRole; created_at: string }
+  const allUsers = (usersRaw ?? []) as RawUser[]
 
   // Open conflicts with booking details
   const { data: conflictsRaw } = await supabase
@@ -103,6 +113,9 @@ export default async function AdminPage() {
       </header>
 
       <div className="max-w-4xl mx-auto px-4 py-6 space-y-8">
+
+        {/* User Management */}
+        <UserManagement users={allUsers as UserRow[]} currentUserId={user.id} />
 
         {/* Conflict Queue */}
         <section>
