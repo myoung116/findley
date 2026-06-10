@@ -14,7 +14,7 @@ export async function approveBooking(
     .from('users').select('role').eq('id', user.id).single()
   const profile = profileData as { role: string } | null
 
-  if (!profile || (profile.role !== 'admin' && profile.role !== 'papa')) {
+  if (!profile || profile.role !== 'admin') {
     return { success: false, error: 'Only admin can approve bookings.' }
   }
 

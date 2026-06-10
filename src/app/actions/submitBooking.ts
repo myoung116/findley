@@ -46,8 +46,14 @@ export async function submitBooking(payload: BookingPayload): Promise<SubmitResu
     .single()
 
   const profile = profileData as { id: string; role: UserRole; name: string } | null
-  if (!profile || (profile.role !== 'principal' && profile.role !== 'papa' && profile.role !== 'admin')) {
-    return { success: false, error: 'Only principals may submit bookings.' }
+  if (!profile || !['admin', 'papa', 'principal', 'cousin'].includes(profile.role)) {
+    return { success: false, error: 'You are not permitted to submit bookings.' }
+  }
+
+  // Cousins can only submit non-exclusive booking types
+  const isExclusive = payload.bookingType === 'exclusive_peak' || payload.bookingType === 'exclusive_offseason'
+  if (profile.role === 'cousin' && isExclusive) {
+    return { success: false, error: 'Cousins may only submit open or last-minute bookings.' }
   }
 
   if (!payload.acknowledgedResponsibility) {
@@ -141,7 +147,8 @@ export async function submitBooking(payload: BookingPayload): Promise<SubmitResu
 
   // --- Insert the booking first so we have an ID ---
   const season = getSeasonForBooking(start)
-  const initialStatus = payload.bookingType === 'lastminute_guest' ? 'confirmed' : 'pending'
+  // Exclusive bookings always need admin approval; non-exclusive auto-confirm for everyone
+  const initialStatus = isExclusive ? 'pending' : 'confirmed'
 
   const { data: bookingData, error: insertError } = await supabase
     .from('bookings')
@@ -165,7 +172,8 @@ export async function submitBooking(payload: BookingPayload): Promise<SubmitResu
   }
 
   // --- Handle room conflicts ---
-  const isPapa = profile.role === 'papa' || profile.role === 'admin'
+  // Only admin retains auto-bump privilege; all other roles go through social/waiver resolution
+  const isPapa = profile.role === 'admin'
 
   for (const conflict of roomConflicts) {
     const conflictingUserName = conflict.users?.name ?? 'Unknown'

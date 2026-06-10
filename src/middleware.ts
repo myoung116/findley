@@ -3,7 +3,7 @@ import { NextResponse, type NextRequest } from 'next/server'
 import type { UserRole } from '@/lib/supabase/types'
 
 const ROLE_REQUIRED: Record<string, UserRole[]> = {
-  '/book':      ['admin', 'papa', 'principal'],
+  '/book':      ['admin', 'papa', 'principal', 'cousin'],
   '/admin':     ['admin'],
   '/optimizer': ['admin', 'papa', 'principal'],
 }

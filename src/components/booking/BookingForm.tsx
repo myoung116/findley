@@ -22,9 +22,10 @@ interface Props {
   onClose?: () => void
   initialStartDate?: string
   initialEndDate?: string
+  role?: string
 }
 
-export function BookingForm({ inline, onClose, initialStartDate = '', initialEndDate = '' }: Props = {}) {
+export function BookingForm({ inline, onClose, initialStartDate = '', initialEndDate = '', role }: Props = {}) {
   const router = useRouter()
 
   const [step, setStep] = useState<Step>('type')
@@ -92,7 +93,7 @@ export function BookingForm({ inline, onClose, initialStartDate = '', initialEnd
   const stepContent = (
     <>
       {step === 'type' && (
-        <BookingTypeStep value={bookingType} onChange={t => { setBookingType(t); advance() }} />
+        <BookingTypeStep value={bookingType} onChange={t => { setBookingType(t); advance() }} role={role} />
       )}
       {step === 'dates' && bookingType && (
         <DateStep

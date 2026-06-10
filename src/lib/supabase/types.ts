@@ -1,4 +1,4 @@
-export type UserRole = 'admin' | 'papa' | 'principal' | 'viewer'
+export type UserRole = 'admin' | 'papa' | 'principal' | 'cousin'
 
 export type FamilyBranch =
   | 'Grandma and Papa'

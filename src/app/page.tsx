@@ -54,7 +54,8 @@ export default async function HomePage() {
     .select(`id, user_id, start_date, end_date, booking_type, status, rooms_requested, guest_count, users ( name )`)
     .not('status', 'in', '(cancelled,bumped)')
 
-  if (role === 'viewer') bookingQuery.eq('status', 'confirmed')
+  // Cousins can now book so they see their own pending too (handled by RLS)
+  // No special filter needed here — RLS handles it per-role
 
   const { data: rawBookings } = await bookingQuery
 

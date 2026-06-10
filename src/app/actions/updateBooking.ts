@@ -26,10 +26,9 @@ export async function updateBooking(
 
   const role = profile.role as string
   const isAdmin = role === 'admin'
-  const isPapa = role === 'papa'
   const isOwner = (booking as { user_id: string }).user_id === user.id
 
-  if (!isAdmin && !isPapa && !isOwner) return { success: false, error: 'Not authorized' }
+  if (!isAdmin && !isOwner) return { success: false, error: 'Not authorized' }
 
   const isPast = new Date((booking as { end_date: string }).end_date) < new Date()
   if (isPast && !isAdmin) return { success: false, error: 'Past bookings can only be modified by the administrator.' }

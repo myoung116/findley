@@ -18,16 +18,16 @@ const ROLE_LABELS: Record<UserRole, string> = {
   admin:     'Admin',
   papa:      'Papa',
   principal: 'Principal',
-  viewer:    'Viewer',
+  cousin:    'Cousin',
 }
 
-const ROLE_OPTIONS: UserRole[] = ['admin', 'papa', 'principal', 'viewer']
+const ROLE_OPTIONS: UserRole[] = ['admin', 'papa', 'principal', 'cousin']
 
 const ROLE_BADGE: Record<UserRole, string> = {
   admin:     'bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300',
   papa:      'bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300',
   principal: 'bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300',
-  viewer:    'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300',
+  cousin:    'bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300',
 }
 
 function UserRoleSelect({ user, currentUserId }: { user: UserRow; currentUserId: string }) {
@@ -69,8 +69,8 @@ function UserRoleSelect({ user, currentUserId }: { user: UserRow; currentUserId:
 }
 
 export function UserManagement({ users, currentUserId }: { users: UserRow[]; currentUserId: string }) {
-  const pending = users.filter(u => u.role === 'viewer')
-  const active  = users.filter(u => u.role !== 'viewer')
+  const pending: UserRow[] = [] // no pending state — all roles are active
+  const active  = users
 
   return (
     <section>
@@ -83,7 +83,7 @@ export function UserManagement({ users, currentUserId }: { users: UserRow[]; cur
         )}
       </h2>
       <p className="text-xs text-slate-400 dark:text-slate-500 mb-3">
-        Change a user&apos;s role using the dropdown. Viewers are pending approval.
+        Change a user&apos;s role using the dropdown.
       </p>
 
       <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden">

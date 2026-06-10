@@ -42,7 +42,7 @@ export function CalendarClient({ bookings, rooms, role, userName, familyBranch, 
   const [panelMode, setPanelMode] = useState<PanelMode>(null)
   const panelRef = useRef<HTMLDivElement>(null)
 
-  const showRoomDetail = role === 'admin' || role === 'papa' || role === 'principal'
+  const showRoomDetail = role === 'admin' || role === 'papa' || role === 'principal' || role === 'cousin'
   const year = current.getFullYear()
   const month = current.getMonth()
   const days = buildCalendarGrid(year, month, bookings)
@@ -248,13 +248,13 @@ export function CalendarClient({ bookings, rooms, role, userName, familyBranch, 
                 rooms={rooms}
                 showRoomDetail={showRoomDetail}
                 onClose={closePanel}
-                canManageAll={role === 'admin' || role === 'papa'}
+                canManageAll={role === 'admin'}
               onRequestStay={showRoomDetail ? (date) => openBookingForm(date) : undefined}
               />
             )}
             {panelMode === 'booking' && (
               <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm mt-4 overflow-hidden">
-                <BookingForm inline onClose={closePanel} initialStartDate={bookingInitialDate} initialEndDate={bookingInitialEndDate} />
+                <BookingForm inline onClose={closePanel} initialStartDate={bookingInitialDate} initialEndDate={bookingInitialEndDate} role={role} />
               </div>
             )}
           </div>
@@ -277,7 +277,7 @@ export function CalendarClient({ bookings, rooms, role, userName, familyBranch, 
         booking={selectedBooking}
         rooms={rooms}
         showRoomDetail={showRoomDetail}
-        canManageAll={role === 'admin' || role === 'papa'}
+        canManageAll={role === 'admin'}
         onClose={() => setSelectedBooking(null)}
       />
     </div>

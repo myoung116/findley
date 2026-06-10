@@ -77,5 +77,5 @@ export const STATUS_OPACITY: Record<BookingStatus, string> = {
 }
 
 export function canSeeRoomDetail(role: UserRole): boolean {
-  return role === 'admin' || role === 'papa' || role === 'principal'
+  return role === 'admin' || role === 'papa' || role === 'principal' || role === 'cousin'
 }

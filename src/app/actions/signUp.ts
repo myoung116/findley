@@ -39,7 +39,7 @@ export async function signUp(
     id: data.user.id,
     email: payload.email,
     name: payload.name,
-    role: 'viewer',
+    role: 'cousin',
     family_branch: payload.familyBranch,
   })
 

@@ -14,9 +14,9 @@ export default async function BookPage() {
     .eq('id', user.id)
     .single()
 
-  if (!profile || (profile.role !== 'principal' && profile.role !== 'papa' && profile.role !== 'admin')) {
+  if (!profile || !['admin', 'papa', 'principal', 'cousin'].includes(profile.role as string)) {
     redirect('/')
   }
 
-  return <BookingForm />
+  return <BookingForm role={profile.role as string} />
 }

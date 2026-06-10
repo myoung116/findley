@@ -3,23 +3,27 @@
 import { BOOKING_TYPE_LABELS, BOOKING_TYPE_DESCRIPTIONS } from '@/lib/booking/dates'
 import type { BookingType } from '@/lib/supabase/types'
 
-const BOOKING_TYPES: BookingType[] = [
+const ALL_BOOKING_TYPES: BookingType[] = [
   'exclusive_offseason',
   'exclusive_peak',
   'open_shared',
   'lastminute_guest',
 ]
 
+const COUSIN_BOOKING_TYPES: BookingType[] = ['open_shared', 'lastminute_guest']
+
 interface Props {
   value: BookingType | null
   onChange: (type: BookingType) => void
+  role?: string
 }
 
-export function BookingTypeStep({ value, onChange }: Props) {
+export function BookingTypeStep({ value, onChange, role }: Props) {
+  const bookingTypes = role === 'cousin' ? COUSIN_BOOKING_TYPES : ALL_BOOKING_TYPES
   return (
     <div className="space-y-3">
       <h2 className="text-base font-semibold text-slate-700 dark:text-slate-200">Select booking type</h2>
-      {BOOKING_TYPES.map(type => (
+      {bookingTypes.map(type => (
         <button
           key={type}
           type="button"

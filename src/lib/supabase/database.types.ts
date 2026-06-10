@@ -385,7 +385,7 @@ export type Database = {
         | "waiver_bump"
         | "booking_confirmed"
       season_type: "peak" | "offseason"
-      user_role: "papa" | "principal" | "viewer" | "admin"
+      user_role: "papa" | "principal" | "cousin" | "admin"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -540,7 +540,7 @@ export const Constants = {
         "booking_confirmed",
       ],
       season_type: ["peak", "offseason"],
-      user_role: ["papa", "principal", "viewer", "admin"],
+      user_role: ["papa", "principal", "cousin", "admin"],
     },
   },
 } as const
