@@ -30,7 +30,7 @@ type ConflictRow = {
   start_date: string
   end_date: string
   created_at: string
-  users: { name: string } | null
+  users: { name: string; role: string } | null
 }
 
 export async function submitBooking(payload: BookingPayload): Promise<SubmitResult> {
@@ -125,7 +125,7 @@ export async function submitBooking(payload: BookingPayload): Promise<SubmitResu
   // Find all overlapping active bookings that share at least one room
   const { data: overlappingRaw } = await supabase
     .from('bookings')
-    .select('id, user_id, rooms_requested, start_date, end_date, created_at, users(name)')
+    .select('id, user_id, rooms_requested, start_date, end_date, created_at, users(name, role)')
     .in('status', ['pending', 'confirmed'])
     .neq('user_id', user.id)
     .lte('start_date', payload.endDate)
@@ -172,8 +172,12 @@ export async function submitBooking(payload: BookingPayload): Promise<SubmitResu
   }
 
   // --- Handle room conflicts ---
-  // Only admin retains auto-bump privilege; all other roles go through social/waiver resolution
-  const isPapa = profile.role === 'admin'
+  // Only admin retains auto-bump privilege
+  // Only principal/cousin are subject to waiver-based bumping
+  // Papa and all other roles go to conflict queue (social resolution)
+  const isAdminSubmitter = profile.role === 'admin'
+  const isSubjectToWaiver = profile.role === 'principal' || profile.role === 'cousin'
+  const isPapa = isAdminSubmitter // keep variable name for existing bump block below
 
   for (const conflict of roomConflicts) {
     const conflictingUserName = conflict.users?.name ?? 'Unknown'
@@ -206,10 +210,12 @@ export async function submitBooking(payload: BookingPayload): Promise<SubmitResu
         },
       })
     } else if (
+      isSubjectToWaiver &&
       payload.bookingType === 'open_shared' &&
-      conflict.rooms_requested.some(r => payload.roomIds.includes(r))
+      conflict.rooms_requested.some(r => payload.roomIds.includes(r)) &&
+      (conflict.users?.role === 'principal' || conflict.users?.role === 'cousin')
     ) {
-      // Waiver-based bump for open_shared conflicts
+      // Waiver-based bump only when both sides are principal/cousin
       const { data: theirScoreData } = await supabase
         .from('waiver_scores')
         .select('nights_ttm, requests_ttm')
