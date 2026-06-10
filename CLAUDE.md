@@ -39,21 +39,30 @@ npm run build
 - **viewer** — read-only calendar access
 
 ## Feedback → auto-task rule (ALWAYS run at session start)
-At the start of every session, query the `feedback` table for unreviewed items and create a task for each one:
+At the start of every session, query the `feedback` table for items that have not yet had a task created:
 
-```sql
--- Run via: npx supabase db remote query (or check Supabase dashboard > Table Editor > feedback)
-SELECT f.id, f.category, f.message, f.created_at, u.name
-FROM feedback f JOIN users u ON u.id = f.user_id
-WHERE f.status = 'new'
-ORDER BY f.created_at ASC;
+```
+GET https://dwhpszbluhjyrvwidwpi.supabase.co/rest/v1/feedback
+  ?task_created=eq.false
+  &select=id,category,message,created_at,users(name)
+  &order=created_at.asc
+Headers: apikey + Authorization (anon key from .env.local)
 ```
 
 For each row returned, call TaskCreate with:
 - title: "[Feedback] <category>: <first 60 chars of message>"
 - details: full message + submitter name + date
 
-After creating the task, do NOT mark the feedback as reviewed — leave that for Michael to do in the admin panel after the task is actioned.
+After creating the task, mark it by PATCHing `task_created = true` on that row:
+```
+PATCH https://dwhpszbluhjyrvwidwpi.supabase.co/rest/v1/feedback?id=eq.<id>
+Body: { "task_created": true }
+Headers: apikey + Authorization (anon key from .env.local)
+```
+
+This is independent of `status` — Michael can mark feedback reviewed in the admin panel
+at any time without affecting whether I've seen it. A task is only skipped once I've
+explicitly set task_created = true.
 
 ## Vercel cron limit
 Hobby plan allows max **one cron per day** per function. All schedules in `vercel.json` must use a daily-or-less pattern (e.g. `0 8 * * *`). Never use `*/15 * * * *` — it silently blocks all deployments.
