@@ -35,9 +35,20 @@ export function DayDetailPanel({ date, bookings, rooms, showRoomDetail, canManag
   })
 
   const peak = isPeakSeason(date)
+  const totalGuests = dayBookings.reduce((sum, b) => sum + b.guestCount, 0)
+
+  // Build roomId → guest count map from all bookings on this day
+  // Note: once bed optimizer is complete, replace guestCount with per-room
+  // assigned counts from sleep_assignments so each room shows exact occupancy.
+  const roomGuests = new Map<string, number>()
+  for (const b of dayBookings) {
+    for (const roomId of b.roomsRequested) {
+      roomGuests.set(roomId, (roomGuests.get(roomId) ?? 0) + b.guestCount)
+    }
+  }
+
   const occupiedRoomIds = new Set(dayBookings.flatMap(b => b.roomsRequested))
   const openRooms = rooms.filter(r => !occupiedRoomIds.has(r.id))
-  const totalGuests = dayBookings.reduce((sum, b) => sum + b.guestCount, 0)
 
   const confirmed = dayBookings.filter(b => b.status === 'confirmed')
   const interested = dayBookings.filter(b => b.status === 'pending' || b.status === 'draft')
@@ -121,7 +132,13 @@ export function DayDetailPanel({ date, bookings, rooms, showRoomDetail, canManag
             <div>
               <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">Rooms</p>
               <div className="space-y-1">
-                {rooms.map(room => <RoomRow key={room.id} room={room} taken={occupiedRoomIds.has(room.id)} />)}
+                {rooms.map(room => (
+                <RoomRow
+                  key={room.id}
+                  room={room}
+                  guests={roomGuests.get(room.id) ?? 0}
+                />
+              ))}
               </div>
             </div>
           )}
@@ -150,10 +167,22 @@ export function DayDetailPanel({ date, bookings, rooms, showRoomDetail, canManag
   )
 }
 
-function RoomRow({ room, taken }: { room: Room; taken: boolean }) {
+function RoomRow({ room, guests }: { room: Room; guests: number }) {
   const [expanded, setExpanded] = useState(false)
   const attrs = room.attributes ?? {}
   const beds = attrs.beds ?? []
+  const capacity = room.max_occupancy
+  const fillPct = capacity > 0 ? Math.min(100, Math.round((guests / capacity) * 100)) : 0
+  const occupied = guests > 0
+
+  // Colour scheme: empty=green, partial=green, getting full=amber, full/over=red
+  const scheme = !occupied
+    ? { wrap: 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400', bar: 'bg-green-400 dark:bg-green-500', label: 'Open' }
+    : fillPct >= 90
+    ? { wrap: 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400',   bar: 'bg-red-400 dark:bg-red-500',   label: `${guests}/${capacity}` }
+    : fillPct >= 60
+    ? { wrap: 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400', bar: 'bg-amber-400 dark:bg-amber-500', label: `${guests}/${capacity}` }
+    : { wrap: 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400', bar: 'bg-green-400 dark:bg-green-500', label: `${guests}/${capacity}` }
 
   const bedCounts: Record<string, number> = {}
   for (const bed of beds) bedCounts[bed] = (bedCounts[bed] ?? 0) + 1
@@ -162,15 +191,11 @@ function RoomRow({ room, taken }: { room: Room; taken: boolean }) {
     .join(', ')
 
   return (
-    <div className={`rounded-lg text-xs ${
-      taken
-        ? 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400'
-        : 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400'
-    }`}>
+    <div className={`rounded-lg text-xs overflow-hidden ${scheme.wrap}`}>
       <div className="flex items-center justify-between px-2 py-1.5">
         <span className="font-medium">{room.name}</span>
         <div className="flex items-center gap-2">
-          <span className="opacity-70">{taken ? 'Occupied' : 'Open'}</span>
+          <span className="font-semibold tabular-nums">{scheme.label}</span>
           <button
             type="button"
             onClick={() => setExpanded(e => !e)}
@@ -181,8 +206,26 @@ function RoomRow({ room, taken }: { room: Room; taken: boolean }) {
           </button>
         </div>
       </div>
+
+      {/* Occupancy fill bar */}
+      {occupied && (
+        <div className="h-1 w-full bg-current bg-opacity-10">
+          <div
+            className={`h-1 transition-all ${scheme.bar}`}
+            style={{ width: `${fillPct}%` }}
+          />
+        </div>
+      )}
+
       {expanded && (
-        <div className="px-2 pb-2 space-y-0.5 border-t border-current border-opacity-10">
+        <div className="px-2 pb-2 pt-1.5 space-y-0.5 border-t border-current border-opacity-10">
+          {occupied && (
+            <p className="opacity-80">
+              <span className="opacity-60">Guests: </span>
+              {guests} of {capacity} beds used
+              {/* TODO: replace with per-bed assignments once optimizer is complete */}
+            </p>
+          )}
           {bedSummary && (
             <p className="opacity-80"><span className="opacity-60">Beds: </span>{bedSummary}</p>
           )}
