@@ -9,6 +9,7 @@ import { DayDetailPanel } from './DayDetailPanel'
 import { BookingForm } from '@/components/booking/BookingForm'
 import { FamilyDashboard } from './FamilyDashboard'
 import { ThemeToggle } from '@/components/ThemeToggle'
+import { FeedbackButton } from '@/components/FeedbackButton'
 import type { UserRole } from '@/lib/supabase/types'
 import type { DashboardStats } from '@/app/page'
 import type { RoomAttributes } from './DayDetailPanel'
@@ -269,6 +270,8 @@ export function CalendarClient({ bookings, rooms, role, userName, familyBranch, 
           </div>
         </div>
       </div>
+
+      <FeedbackButton />
 
       <BookingDetailModal
         booking={selectedBooking}

@@ -38,5 +38,22 @@ npm run build
 - **principal** — can submit bookings; subject to waiver/bump logic
 - **viewer** — read-only calendar access
 
+## Feedback → auto-task rule (ALWAYS run at session start)
+At the start of every session, query the `feedback` table for unreviewed items and create a task for each one:
+
+```sql
+-- Run via: npx supabase db remote query (or check Supabase dashboard > Table Editor > feedback)
+SELECT f.id, f.category, f.message, f.created_at, u.name
+FROM feedback f JOIN users u ON u.id = f.user_id
+WHERE f.status = 'new'
+ORDER BY f.created_at ASC;
+```
+
+For each row returned, call TaskCreate with:
+- title: "[Feedback] <category>: <first 60 chars of message>"
+- details: full message + submitter name + date
+
+After creating the task, do NOT mark the feedback as reviewed — leave that for Michael to do in the admin panel after the task is actioned.
+
 ## Vercel cron limit
 Hobby plan allows max **one cron per day** per function. All schedules in `vercel.json` must use a daily-or-less pattern (e.g. `0 8 * * *`). Never use `*/15 * * * *` — it silently blocks all deployments.

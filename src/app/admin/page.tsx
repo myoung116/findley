@@ -5,6 +5,7 @@ import { BOOKING_TYPE_LABELS } from '@/lib/booking/dates'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { UserManagement, type UserRow } from './UserManagement'
 import { PendingBookings, type PendingBookingRow } from './PendingBookings'
+import { FeedbackQueue, type FeedbackRow } from './FeedbackQueue'
 import type { BookingType, UserRole } from '@/lib/supabase/types'
 
 type ConflictWithBookings = {
@@ -66,6 +67,15 @@ export default async function AdminPage() {
     .order('created_at', { ascending: true })
 
   const pendingBookings = (pendingRaw ?? []) as PendingBookingRow[]
+
+  // Feedback
+  const { data: feedbackRaw } = await supabase
+    .from('feedback')
+    .select('id, category, message, status, created_at, users(name, family_branch)')
+    .order('created_at', { ascending: false })
+    .limit(50)
+
+  const feedbackItems = (feedbackRaw ?? []) as FeedbackRow[]
 
   // Open conflicts with booking details
   const { data: conflictsRaw } = await supabase
@@ -129,6 +139,9 @@ export default async function AdminPage() {
 
         {/* Pending Bookings */}
         <PendingBookings bookings={pendingBookings} />
+
+        {/* Feedback */}
+        <FeedbackQueue items={feedbackItems} />
 
         {/* Conflict Queue */}
         <section>

@@ -1,4 +1,3 @@
-﻿
 export type Json =
   | string
   | number
@@ -120,6 +119,41 @@ export type Database = {
           },
         ]
       }
+      feedback: {
+        Row: {
+          category: Database["public"]["Enums"]["feedback_category"]
+          created_at: string
+          id: string
+          message: string
+          status: Database["public"]["Enums"]["feedback_status"]
+          user_id: string
+        }
+        Insert: {
+          category?: Database["public"]["Enums"]["feedback_category"]
+          created_at?: string
+          id?: string
+          message: string
+          status?: Database["public"]["Enums"]["feedback_status"]
+          user_id: string
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["feedback_category"]
+          created_at?: string
+          id?: string
+          message?: string
+          status?: Database["public"]["Enums"]["feedback_status"]
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "feedback_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       interests: {
         Row: {
           created_at: string
@@ -194,6 +228,7 @@ export type Database = {
           id: string
           max_occupancy: number
           name: string
+          sort_order: number
         }
         Insert: {
           attributes?: Json
@@ -201,6 +236,7 @@ export type Database = {
           id?: string
           max_occupancy: number
           name: string
+          sort_order?: number
         }
         Update: {
           attributes?: Json
@@ -208,6 +244,7 @@ export type Database = {
           id?: string
           max_occupancy?: number
           name?: string
+          sort_order?: number
         }
         Relationships: []
       }
@@ -337,6 +374,8 @@ export type Database = {
         | "Tom and Moe"
         | "Keke and Matt"
         | "Dick and Colleen"
+      feedback_category: "bug" | "suggestion" | "question" | "other"
+      feedback_status: "new" | "reviewed"
       notification_type:
         | "exclusive_overlap"
         | "papa_overlap"
@@ -489,6 +528,8 @@ export const Constants = {
         "Keke and Matt",
         "Dick and Colleen",
       ],
+      feedback_category: ["bug", "suggestion", "question", "other"],
+      feedback_status: ["new", "reviewed"],
       notification_type: [
         "exclusive_overlap",
         "papa_overlap",
@@ -503,4 +544,3 @@ export const Constants = {
     },
   },
 } as const
-
