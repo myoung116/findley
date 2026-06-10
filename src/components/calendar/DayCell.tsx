@@ -52,22 +52,35 @@ export function DayCell({ day, selected, inDragRange, isDragStart, isDragEnd, on
       onMouseEnter={() => onMouseEnter?.(day.date)}
       onMouseUp={() => onMouseUp?.(day.date)}
     >
-      <div className="flex items-center justify-between mb-1">
-        <span
-          className={`
-            text-xs font-medium w-6 h-6 flex items-center justify-center rounded-full
-            ${day.isToday && !(isDragStart || isDragEnd)
-              ? 'bg-blue-600 text-white'
-              : dateNumColor
-            }
-          `}
-        >
-          {format(day.date, 'd')}
-        </span>
-        {day.isPeakSeason && day.isCurrentMonth && !(isDragStart || isDragEnd) && (
-          <span className="text-[10px] text-sky-500 dark:text-sky-400 font-medium">peak</span>
-        )}
-      </div>
+      {(() => {
+        const totalGuests = day.bookings.reduce((sum, b) => sum + b.guestCount, 0)
+        return (
+          <div className="flex items-center justify-between mb-1">
+            <span
+              className={`
+                text-xs font-medium w-6 h-6 flex items-center justify-center rounded-full
+                ${day.isToday && !(isDragStart || isDragEnd)
+                  ? 'bg-blue-600 text-white'
+                  : dateNumColor
+                }
+              `}
+            >
+              {format(day.date, 'd')}
+            </span>
+            <div className="flex items-center gap-1">
+              {totalGuests > 0 && !(isDragStart || isDragEnd) && (
+                <span className="text-[10px] font-semibold tabular-nums text-slate-400 dark:text-slate-500 leading-none">
+                  {totalGuests}
+                  <span className="font-normal opacity-70"> ppl</span>
+                </span>
+              )}
+              {day.isPeakSeason && day.isCurrentMonth && !(isDragStart || isDragEnd) && (
+                <span className="text-[10px] text-sky-500 dark:text-sky-400 font-medium">peak</span>
+              )}
+            </div>
+          </div>
+        )
+      })()}
 
       <div className="space-y-0.5">
         {day.bookings.slice(0, 3).map(booking => (
