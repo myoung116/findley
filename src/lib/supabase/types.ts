@@ -27,6 +27,7 @@ export type NotificationType =
   | 'post_lockin_cancellation'
   | 'waiver_bump'
   | 'booking_confirmed'
+  | 'cousin_pending_approval'
 
 export interface Database {
   public: {
@@ -133,6 +134,17 @@ export interface Database {
         }
         Insert: Omit<Database['public']['Tables']['notifications']['Row'], 'id' | 'created_at'>
         Update: Partial<Database['public']['Tables']['notifications']['Insert']>
+      }
+      branch_policies: {
+        Row: {
+          family_branch: FamilyBranch
+          require_cousin_approval: boolean
+          cousin_guest_cap: number | null
+          updated_by: string | null
+          updated_at: string
+        }
+        Insert: Omit<Database['public']['Tables']['branch_policies']['Row'], 'updated_at'>
+        Update: Partial<Database['public']['Tables']['branch_policies']['Insert']>
       }
     }
   }

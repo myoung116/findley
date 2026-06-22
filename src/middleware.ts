@@ -5,6 +5,7 @@ import type { UserRole } from '@/lib/supabase/types'
 const ROLE_REQUIRED: Record<string, UserRole[]> = {
   '/book':      ['admin', 'papa', 'principal', 'cousin'],
   '/admin':     ['admin'],
+  '/branch':    ['admin', 'principal'],
   '/optimizer': ['admin', 'papa', 'principal'],
 }
 

@@ -1,10 +1,11 @@
 'use server'
 
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { validateBookingDates, validateOffseasonGap } from '@/lib/booking/validation'
 import { getSeasonForBooking } from '@/lib/booking/seasons'
 import { decideBump, roomsConflict } from '@/lib/conflicts/bump'
-import type { BookingType, UserRole } from '@/lib/supabase/types'
+import type { BookingType, UserRole, FamilyBranch } from '@/lib/supabase/types'
 
 export interface BookingPayload {
   bookingType: BookingType
@@ -41,11 +42,11 @@ export async function submitBooking(payload: BookingPayload): Promise<SubmitResu
 
   const { data: profileData } = await supabase
     .from('users')
-    .select('id, role, name')
+    .select('id, role, name, family_branch')
     .eq('id', user.id)
     .single()
 
-  const profile = profileData as { id: string; role: UserRole; name: string } | null
+  const profile = profileData as { id: string; role: UserRole; name: string; family_branch: FamilyBranch } | null
   if (!profile || !['admin', 'papa', 'principal', 'cousin'].includes(profile.role)) {
     return { success: false, error: 'You are not permitted to submit bookings.' }
   }
@@ -54,6 +55,28 @@ export async function submitBooking(payload: BookingPayload): Promise<SubmitResu
   const isExclusive = payload.bookingType === 'exclusive_peak' || payload.bookingType === 'exclusive_offseason'
   if (profile.role === 'cousin' && isExclusive) {
     return { success: false, error: 'Cousins may only submit open or last-minute bookings.' }
+  }
+
+  // --- Branch policies: rules a principal set for the cousins in their branch ---
+  // Only apply to cousins; principals/papa/admin are not governed by these.
+  let cousinNeedsApproval = false
+  if (profile.role === 'cousin') {
+    const { data: policyData } = await supabase
+      .from('branch_policies')
+      .select('require_cousin_approval, cousin_guest_cap')
+      .eq('family_branch', profile.family_branch)
+      .maybeSingle()
+
+    const policy = policyData as { require_cousin_approval: boolean; cousin_guest_cap: number | null } | null
+
+    if (policy?.cousin_guest_cap != null && payload.guestCount > policy.cousin_guest_cap) {
+      return {
+        success: false,
+        error: `Your family principal limits cousin bookings to ${policy.cousin_guest_cap} guest${policy.cousin_guest_cap === 1 ? '' : 's'}. Please reduce your guest count or ask your principal.`,
+      }
+    }
+
+    cousinNeedsApproval = policy?.require_cousin_approval === true
   }
 
   if (!payload.acknowledgedResponsibility) {
@@ -147,8 +170,9 @@ export async function submitBooking(payload: BookingPayload): Promise<SubmitResu
 
   // --- Insert the booking first so we have an ID ---
   const season = getSeasonForBooking(start)
-  // Exclusive bookings always need admin approval; non-exclusive auto-confirm for everyone
-  const initialStatus = isExclusive ? 'pending' : 'confirmed'
+  // Exclusive bookings always need admin approval. Non-exclusive auto-confirm,
+  // except cousins whose branch principal requires approval first.
+  const initialStatus = (isExclusive || cousinNeedsApproval) ? 'pending' : 'confirmed'
 
   const { data: bookingData, error: insertError } = await supabase
     .from('bookings')
@@ -171,6 +195,37 @@ export async function submitBooking(payload: BookingPayload): Promise<SubmitResu
     return { success: false, error: 'Failed to submit booking. Please try again.' }
   }
 
+  // If this cousin booking needs branch-principal approval, notify the principal(s)
+  // of the cousin's branch. Use the admin client: a cousin can't read other
+  // users' rows or write notifications for them under RLS.
+  if (cousinNeedsApproval) {
+    const admin = createAdminClient()
+    const { data: principals } = await admin
+      .from('users')
+      .select('id')
+      .eq('role', 'principal')
+      .eq('family_branch', profile.family_branch)
+
+    const principalRows = (principals ?? []) as { id: string }[]
+    if (principalRows.length > 0) {
+      await admin.from('notifications').insert(
+        principalRows.map(p => ({
+          user_id: p.id,
+          type: 'cousin_pending_approval' as const,
+          payload: {
+            booking_id: booking.id,
+            cousin_name: profile.name,
+            booking_type: payload.bookingType,
+            start_date: payload.startDate,
+            end_date: payload.endDate,
+            guest_count: payload.guestCount,
+            rooms_requested: payload.roomIds,
+          },
+        }))
+      )
+    }
+  }
+
   // --- Handle room conflicts ---
   // Only admin retains auto-bump privilege
   // Only principal/cousin are subject to waiver-based bumping
@@ -179,7 +234,9 @@ export async function submitBooking(payload: BookingPayload): Promise<SubmitResu
   const isSubjectToWaiver = profile.role === 'principal' || profile.role === 'cousin'
   const isPapa = isAdminSubmitter // keep variable name for existing bump block below
 
-  for (const conflict of roomConflicts) {
+  // A cousin booking awaiting principal approval doesn't bump or conflict with
+  // anyone yet — conflict resolution is deferred until the principal approves.
+  for (const conflict of (cousinNeedsApproval ? [] : roomConflicts)) {
     const conflictingUserName = conflict.users?.name ?? 'Unknown'
 
     if (isPapa) {

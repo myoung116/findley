@@ -162,5 +162,25 @@ export function buildEmailContent(
         `),
       }
     }
+
+    case 'cousin_pending_approval': {
+      const cousin = payload.cousin_name as string
+      const startDate = payload.start_date as string
+      const endDate = payload.end_date as string
+      const guestCount = payload.guest_count as number
+      return {
+        subject: `${cousin} needs your approval — Findley Lake`,
+        html: layout(`
+          ${hi}
+          <p><strong>${cousin}</strong> in your family branch has requested a stay that needs your approval:</p>
+          <p style="background:#fff;border-radius:8px;padding:12px;margin:12px 0;font-size:14px;">
+            <strong>Dates:</strong> ${dateRange(startDate, endDate)}<br/>
+            <strong>Guests:</strong> ${guestCount}
+          </p>
+          <p>You can approve it as-is, adjust the rooms, or reject it from your branch page.</p>
+          ${btn('Review Request', `${appUrl}/branch`)}
+        `),
+      }
+    }
   }
 }

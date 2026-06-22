@@ -3,15 +3,12 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 
-interface ApproveOptions {
-  // Optional room override — a branch principal may change the rooms a cousin
-  // requested when approving. Omit to keep the requested rooms.
-  roomIds?: string[]
-}
-
-export async function approveBooking(
+// Reject a pending booking. Admin can reject any; a branch principal can reject
+// a pending booking made by a cousin in their own branch. Mirrors the
+// authorization in approveBooking.
+export async function rejectBooking(
   bookingId: string,
-  opts: ApproveOptions = {}
+  reason?: string
 ): Promise<{ success: boolean; error?: string }> {
   const supabase = await createClient()
 
@@ -23,24 +20,21 @@ export async function approveBooking(
   const profile = profileData as { role: string; family_branch: string } | null
   if (!profile) return { success: false, error: 'Profile not found.' }
 
-  // Admin can approve anything. A principal can approve pending bookings made by
-  // a cousin in their own branch. Use the admin client to read the booking owner
-  // and to mutate, since principals can't read/update other users' rows under RLS.
   const admin = createAdminClient()
 
   const { data: bookingData } = await admin
     .from('bookings')
-    .select('id, user_id, status, start_date, end_date, booking_type, rooms_requested')
+    .select('id, user_id, status, start_date, end_date, booking_type')
     .eq('id', bookingId)
     .single()
 
   const booking = bookingData as {
     id: string; user_id: string; status: string
-    start_date: string; end_date: string; booking_type: string; rooms_requested: string[]
+    start_date: string; end_date: string; booking_type: string
   } | null
   if (!booking) return { success: false, error: 'Booking not found.' }
   if (booking.status !== 'pending') {
-    return { success: false, error: 'Only pending bookings can be approved.' }
+    return { success: false, error: 'Only pending bookings can be rejected.' }
   }
 
   let authorized = profile.role === 'admin'
@@ -53,34 +47,28 @@ export async function approveBooking(
   }
 
   if (!authorized) {
-    return { success: false, error: 'You are not permitted to approve this booking.' }
-  }
-
-  // Apply the approval (and optional room override).
-  const update: { status: 'confirmed'; rooms_requested?: string[] } = { status: 'confirmed' }
-  if (opts.roomIds && opts.roomIds.length > 0) {
-    update.rooms_requested = opts.roomIds
+    return { success: false, error: 'You are not permitted to reject this booking.' }
   }
 
   const { error } = await admin
     .from('bookings')
-    .update(update)
+    .update({ status: 'cancelled' })
     .eq('id', bookingId)
     .eq('status', 'pending')
 
   if (error) return { success: false, error: error.message }
 
-  // Notify the booking owner that they're confirmed.
   await admin.from('notifications').insert({
     user_id: booking.user_id,
-    type: 'booking_confirmed',
+    type: 'booking_confirmed', // reuse existing type; payload carries the rejection
     payload: {
       booking_id: bookingId,
       booking_type: booking.booking_type,
       start_date: booking.start_date,
       end_date: booking.end_date,
-      status: 'confirmed',
-      rooms_overridden: !!update.rooms_requested,
+      status: 'cancelled',
+      rejected: true,
+      reason: reason ?? null,
     },
   })
 

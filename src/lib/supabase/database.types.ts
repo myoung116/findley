@@ -119,6 +119,38 @@ export type Database = {
           },
         ]
       }
+      branch_policies: {
+        Row: {
+          family_branch: Database["public"]["Enums"]["family_branch"]
+          require_cousin_approval: boolean
+          cousin_guest_cap: number | null
+          updated_by: string | null
+          updated_at: string
+        }
+        Insert: {
+          family_branch: Database["public"]["Enums"]["family_branch"]
+          require_cousin_approval?: boolean
+          cousin_guest_cap?: number | null
+          updated_by?: string | null
+          updated_at?: string
+        }
+        Update: {
+          family_branch?: Database["public"]["Enums"]["family_branch"]
+          require_cousin_approval?: boolean
+          cousin_guest_cap?: number | null
+          updated_by?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "branch_policies_updated_by_fkey"
+            columns: ["updated_by"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       feedback: {
         Row: {
           category: Database["public"]["Enums"]["feedback_category"]
@@ -384,6 +416,7 @@ export type Database = {
         | "post_lockin_cancellation"
         | "waiver_bump"
         | "booking_confirmed"
+        | "cousin_pending_approval"
       season_type: "peak" | "offseason"
       user_role: "papa" | "principal" | "cousin" | "admin"
     }
