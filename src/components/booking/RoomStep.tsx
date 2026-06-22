@@ -8,6 +8,7 @@ interface Props {
   endDate: string
   selectedRoomIds: string[]
   totalGuests: number
+  excludeBookingId?: string
   onToggleRoom: (roomId: string) => void
   onCapacityChange: (capacity: number) => void
 }
@@ -127,17 +128,17 @@ function RoomCard({
   )
 }
 
-export function RoomStep({ startDate, endDate, selectedRoomIds, totalGuests, onToggleRoom, onCapacityChange }: Props) {
+export function RoomStep({ startDate, endDate, selectedRoomIds, totalGuests, excludeBookingId, onToggleRoom, onCapacityChange }: Props) {
   const [rooms, setRooms] = useState<RoomAvailabilityResult[]>([])
   const [isPending, startTransition] = useTransition()
 
   useEffect(() => {
     if (!startDate || !endDate) return
     startTransition(async () => {
-      const result = await getRoomAvailability(startDate, endDate)
+      const result = await getRoomAvailability(startDate, endDate, excludeBookingId)
       setRooms(result)
     })
-  }, [startDate, endDate])
+  }, [startDate, endDate, excludeBookingId])
 
   const selectedRooms = rooms.filter(r => selectedRoomIds.includes(r.id))
   const totalBeds = selectedRooms.reduce((sum, r) => sum + r.max_occupancy, 0)

@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { format, parseISO } from 'date-fns'
 import { cancelBooking } from '@/app/actions/cancelBooking'
-import { updateBooking } from '@/app/actions/updateBooking'
+import { EditBookingForm } from './EditBookingForm'
 import { BOOKING_TYPE_LABELS } from '@/lib/booking/dates'
 import type { BookingType, BookingStatus } from '@/lib/supabase/types'
 
@@ -26,19 +26,8 @@ interface Props {
 export function ManageBookingModal({ booking, onClose }: Props) {
   const router = useRouter()
   const [tab, setTab] = useState<'edit' | 'cancel'>('edit')
-  const [notes, setNotes] = useState(booking.notes ?? '')
-  const [guestCount, setGuestCount] = useState(booking.guestCount)
-  const [saving, setSaving] = useState(false)
   const [confirming, setConfirming] = useState(false)
   const [error, setError] = useState<string | null>(null)
-
-  async function handleSave() {
-    setSaving(true)
-    setError(null)
-    const result = await updateBooking(booking.id, { notes, guestCount })
-    if (result.success) { router.refresh(); onClose() }
-    else { setError(result.error ?? 'Failed to save'); setSaving(false) }
-  }
 
   async function handleCancel() {
     setConfirming(true)
@@ -51,7 +40,7 @@ export function ManageBookingModal({ booking, onClose }: Props) {
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4" onClick={onClose}>
       <div
-        className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-sm border border-slate-200 dark:border-slate-700 overflow-hidden"
+        className="bg-white dark:bg-slate-900 rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] flex flex-col border border-slate-200 dark:border-slate-700 overflow-hidden"
         onClick={e => e.stopPropagation()}
       >
         {/* Header */}
@@ -82,39 +71,9 @@ export function ManageBookingModal({ booking, onClose }: Props) {
           ))}
         </div>
 
-        <div className="px-5 py-4 space-y-4">
+        <div className="px-5 py-4 space-y-4 overflow-y-auto">
           {tab === 'edit' && (
-            <>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Guest count</label>
-                <input
-                  type="number"
-                  min={0}
-                  value={guestCount}
-                  onChange={e => setGuestCount(Number(e.target.value))}
-                  className="w-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Notes</label>
-                <textarea
-                  value={notes}
-                  onChange={e => setNotes(e.target.value)}
-                  rows={3}
-                  placeholder="Anything the family should know…"
-                  className="w-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
-              </div>
-              <p className="text-xs text-slate-400 dark:text-slate-500">To change dates or rooms, cancel this booking and submit a new request.</p>
-              {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
-              <button
-                onClick={handleSave}
-                disabled={saving}
-                className="w-full bg-blue-600 text-white rounded-xl py-2.5 text-sm font-medium hover:bg-blue-700 disabled:opacity-40 transition-colors"
-              >
-                {saving ? 'Saving…' : 'Save Changes'}
-              </button>
-            </>
+            <EditBookingForm bookingId={booking.id} bookingType={booking.bookingType} onSaved={onClose} />
           )}
 
           {tab === 'cancel' && (
