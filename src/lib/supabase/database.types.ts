@@ -125,6 +125,41 @@ export type Database = {
           },
         ]
       }
+      branch_members: {
+        Row: {
+          id: string
+          family_branch: Database["public"]["Enums"]["family_branch"]
+          name: string
+          linked_user_id: string | null
+          preferred_room_ids: string[]
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          family_branch: Database["public"]["Enums"]["family_branch"]
+          name: string
+          linked_user_id?: string | null
+          preferred_room_ids?: string[]
+          created_at?: string
+        }
+        Update: {
+          id?: string
+          family_branch?: Database["public"]["Enums"]["family_branch"]
+          name?: string
+          linked_user_id?: string | null
+          preferred_room_ids?: string[]
+          created_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "branch_members_linked_user_id_fkey"
+            columns: ["linked_user_id"]
+            isOneToOne: false
+            referencedRelation: "users"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       branch_policies: {
         Row: {
           family_branch: Database["public"]["Enums"]["family_branch"]

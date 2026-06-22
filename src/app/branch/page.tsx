@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import type { FamilyBranch, BookingType, BookingStatus } from '@/lib/supabase/types'
 import { BranchPolicyForm } from './BranchPolicyForm'
 import { BranchPendingQueue, type PendingCousinBooking } from './BranchPendingQueue'
+import { BranchMembers, type BranchMember } from './BranchMembers'
 
 export default async function BranchPage() {
   const supabase = await createClient()
@@ -63,12 +64,26 @@ export default async function BranchPage() {
     }))
   }
 
-  // All rooms (for display + override picker).
+  // All rooms (for display + override picker + room preferences).
   const { data: roomRows } = await admin
     .from('rooms')
     .select('id, name, max_occupancy')
     .order('sort_order')
   const rooms = (roomRows ?? []) as { id: string; name: string; max_occupancy: number }[]
+
+  // Branch roster.
+  const { data: memberRows } = await admin
+    .from('branch_members')
+    .select('id, name, linked_user_id, preferred_room_ids')
+    .eq('family_branch', branch)
+    .order('name')
+  type MemberRow = { id: string; name: string; linked_user_id: string | null; preferred_room_ids: string[] }
+  const members: BranchMember[] = ((memberRows ?? []) as MemberRow[]).map(m => ({
+    id: m.id,
+    name: m.name,
+    hasAccount: m.linked_user_id != null,
+    preferredRoomIds: m.preferred_room_ids ?? [],
+  }))
 
   return (
     <div className="max-w-3xl mx-auto px-6 py-8 space-y-8">
@@ -79,6 +94,13 @@ export default async function BranchPage() {
         </div>
         <a href="/" className="text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200">← Calendar</a>
       </div>
+
+      <section>
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-3">
+          Branch members {members.length > 0 && <span className="text-slate-400">({members.length})</span>}
+        </h2>
+        <BranchMembers members={members} rooms={rooms.map(r => ({ id: r.id, name: r.name }))} />
+      </section>
 
       <section>
         <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500 dark:text-slate-400 mb-3">Cousin policies</h2>

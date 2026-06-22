@@ -73,14 +73,16 @@ export default async function HomePage() {
   // else is booked — without exposing emails or relaxing the users-table policy.
   const bookerIds = Array.from(new Set(rawBookingList.map(b => b.user_id)))
   const nameById = new Map<string, string>()
+  const branchById = new Map<string, string>()
   if (bookerIds.length > 0) {
     const admin = createAdminClient()
     const { data: bookerRows } = await admin
       .from('users')
-      .select('id, name')
+      .select('id, name, family_branch')
       .in('id', bookerIds)
-    for (const row of (bookerRows ?? []) as { id: string; name: string }[]) {
+    for (const row of (bookerRows ?? []) as { id: string; name: string; family_branch: string }[]) {
       nameById.set(row.id, row.name)
+      branchById.set(row.id, row.family_branch)
     }
   }
 
@@ -96,6 +98,7 @@ export default async function HomePage() {
     guestCount: b.guest_count,
     adultCount: b.adult_count,
     kidCount: b.kid_count,
+    familyBranch: branchById.get(b.user_id) ?? 'Unknown',
   }))
 
   const { data: rooms } = await supabase

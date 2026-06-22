@@ -55,6 +55,18 @@ export function DayDetailPanel({ date, bookings, rooms, showRoomDetail, canManag
   const confirmed = dayBookings.filter(b => b.status === 'confirmed')
   const interested = dayBookings.filter(b => b.status === 'pending' || b.status === 'draft')
 
+  // Group bookings by family branch so members of the same branch show together.
+  function groupByBranch(list: CalendarBooking[]): [string, CalendarBooking[]][] {
+    const groups = new Map<string, CalendarBooking[]>()
+    for (const b of list) {
+      const key = b.familyBranch || 'Other'
+      const arr = groups.get(key) ?? []
+      arr.push(b)
+      groups.set(key, arr)
+    }
+    return Array.from(groups.entries()).sort((a, b) => a[0].localeCompare(b[0]))
+  }
+
   return (
     <>
     <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm mt-4 overflow-hidden">
@@ -91,16 +103,30 @@ export function DayDetailPanel({ date, bookings, rooms, showRoomDetail, canManag
               {confirmed.length > 0 && (
                 <div>
                   <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">Booked</p>
-                  <div className="space-y-2">
-                    {confirmed.map(b => <FamilyRow key={b.id} booking={b} rooms={rooms} showRooms={showRoomDetail} canManage={canManageAll} onManage={setManaging} />)}
+                  <div className="space-y-3">
+                    {groupByBranch(confirmed).map(([branch, list]) => (
+                      <div key={branch}>
+                        <p className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 mb-1">{branch}</p>
+                        <div className="space-y-2 pl-2 border-l-2 border-slate-100 dark:border-slate-800">
+                          {list.map(b => <FamilyRow key={b.id} booking={b} rooms={rooms} showRooms={showRoomDetail} canManage={canManageAll} onManage={setManaging} />)}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
               {interested.length > 0 && (
                 <div>
                   <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wide mb-2">Interested / Pending</p>
-                  <div className="space-y-2">
-                    {interested.map(b => <FamilyRow key={b.id} booking={b} rooms={rooms} showRooms={showRoomDetail} canManage={canManageAll} onManage={setManaging} />)}
+                  <div className="space-y-3">
+                    {groupByBranch(interested).map(([branch, list]) => (
+                      <div key={branch}>
+                        <p className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 mb-1">{branch}</p>
+                        <div className="space-y-2 pl-2 border-l-2 border-slate-100 dark:border-slate-800">
+                          {list.map(b => <FamilyRow key={b.id} booking={b} rooms={rooms} showRooms={showRoomDetail} canManage={canManageAll} onManage={setManaging} />)}
+                        </div>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}
