@@ -3,6 +3,7 @@
 interface Guest {
   name: string
   relationship: string
+  isChild?: boolean
 }
 
 interface Props {
@@ -21,7 +22,7 @@ export function GuestStep({ guests, acknowledged, onGuestsChange, onAcknowledgeC
     onGuestsChange(guests.filter((_, i) => i !== index))
   }
 
-  function updateGuest(index: number, field: keyof Guest, value: string) {
+  function updateGuest(index: number, field: keyof Guest, value: string | boolean) {
     const updated = guests.map((g, i) => i === index ? { ...g, [field]: value } : g)
     onGuestsChange(updated)
   }
@@ -62,6 +63,15 @@ export function GuestStep({ guests, acknowledged, onGuestsChange, onAcknowledgeC
               onChange={e => updateGuest(i, 'relationship', e.target.value)}
               className="w-full border border-slate-200 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 rounded-lg px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
+            <label className="flex items-center gap-2 cursor-pointer text-xs text-slate-500 dark:text-slate-400">
+              <input
+                type="checkbox"
+                checked={guest.isChild ?? false}
+                onChange={e => updateGuest(i, 'isChild', e.target.checked)}
+                className="accent-blue-600"
+              />
+              This guest is a child (under 13)
+            </label>
           </div>
         ))}
       </div>

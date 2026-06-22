@@ -50,6 +50,7 @@ export interface Database {
           name: string
           bed_count: number
           max_occupancy: number
+          flex_capacity: number
           attributes: Record<string, unknown>
         }
         Insert: Omit<Database['public']['Tables']['rooms']['Row'], 'id'>
@@ -66,6 +67,8 @@ export interface Database {
           season: SeasonType
           rooms_requested: string[]
           guest_count: number
+          adult_count: number
+          kid_count: number
           waiver_eligible: boolean
           notes: string | null
           created_at: string

@@ -15,7 +15,7 @@ import type { BookingType } from '@/lib/supabase/types'
 type Step = 'type' | 'dates' | 'guests' | 'rooms' | 'confirm'
 const STEPS: Step[] = ['type', 'dates', 'guests', 'rooms', 'confirm']
 
-interface Guest { name: string; relationship: string }
+interface Guest { name: string; relationship: string; isChild?: boolean }
 
 interface Props {
   inline?: boolean
@@ -34,8 +34,17 @@ export function BookingForm({ inline, onClose, initialStartDate = '', initialEnd
   const [endDate, setEndDate] = useState(initialEndDate)
   const [selectedRoomIds, setSelectedRoomIds] = useState<string[]>([])
   const [guests, setGuests] = useState<Guest[]>([])
-  const [familyCount, setFamilyCount] = useState(1)
+  const [adultCount, setAdultCount] = useState(1)
+  const [kidCount, setKidCount] = useState(0)
   const [roomCapacity, setRoomCapacity] = useState(0)
+
+  // Totals fold the family headcount together with named external guests,
+  // each of whom is an adult unless flagged as a child.
+  const guestAdults = guests.filter(g => !g.isChild).length
+  const guestKids = guests.filter(g => g.isChild).length
+  const totalAdults = adultCount + guestAdults
+  const totalKids = kidCount + guestKids
+  const totalParty = totalAdults + totalKids
   const [acknowledged, setAcknowledged] = useState(false)
   const [notes, setNotes] = useState('')
   const [submitting, setSubmitting] = useState(false)
@@ -54,7 +63,7 @@ export function BookingForm({ inline, onClose, initialStartDate = '', initialEnd
       case 'type':    return bookingType !== null
       case 'dates':   return !!startDate && !!endDate && startDate < endDate
       case 'guests':  return acknowledged
-      case 'rooms':   return selectedRoomIds.length > 0 && roomCapacity >= (familyCount + guests.length)
+      case 'rooms':   return selectedRoomIds.length > 0 && roomCapacity >= totalParty
       case 'confirm': return true
     }
   }
@@ -70,7 +79,9 @@ export function BookingForm({ inline, onClose, initialStartDate = '', initialEnd
     const result = await submitBooking({
       bookingType, startDate, endDate,
       roomIds: selectedRoomIds,
-      guestCount: familyCount + guests.length,
+      guestCount: totalParty,
+      adultCount: totalAdults,
+      kidCount: totalKids,
       guests, notes,
       acknowledgedResponsibility: acknowledged,
     })
@@ -99,9 +110,9 @@ export function BookingForm({ inline, onClose, initialStartDate = '', initialEnd
         <DateStep
           bookingType={bookingType}
           startDate={startDate} endDate={endDate}
-          familyCount={familyCount}
+          adultCount={adultCount} kidCount={kidCount}
           onStartChange={setStartDate} onEndChange={setEndDate}
-          onFamilyCountChange={setFamilyCount}
+          onAdultCountChange={setAdultCount} onKidCountChange={setKidCount}
         />
       )}
       {step === 'guests' && (
@@ -115,7 +126,7 @@ export function BookingForm({ inline, onClose, initialStartDate = '', initialEnd
         <RoomStep
           startDate={startDate} endDate={endDate}
           selectedRoomIds={selectedRoomIds} onToggleRoom={toggleRoom}
-          totalGuests={familyCount + guests.length}
+          totalGuests={totalParty}
           onCapacityChange={setRoomCapacity}
         />
       )}
@@ -126,9 +137,10 @@ export function BookingForm({ inline, onClose, initialStartDate = '', initialEnd
             <Row label="Type"  value={BOOKING_TYPE_LABELS[bookingType]} />
             <Row label="Dates" value={`${format(parseISO(startDate), 'MMM d')} – ${format(parseISO(endDate), 'MMM d, yyyy')}`} />
             <Row label="Rooms" value={`${selectedRoomIds.length} selected`} />
-            <Row label="Family members" value={String(familyCount)} />
+            <Row label="Adults" value={String(totalAdults)} />
+            <Row label="Kids" value={String(totalKids)} />
             <Row label="External guests" value={guests.length > 0 ? String(guests.length) : 'None'} />
-            <Row label="Total party" value={String(familyCount + guests.length)} />
+            <Row label="Total party" value={`${totalParty} (${totalAdults} adult${totalAdults === 1 ? '' : 's'}${totalKids > 0 ? `, ${totalKids} kid${totalKids === 1 ? '' : 's'}` : ''})`} />
           </div>
           <div>
             <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Notes (optional)</label>

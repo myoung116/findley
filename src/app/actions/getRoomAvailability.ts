@@ -7,6 +7,7 @@ export interface RoomAvailabilityResult {
   name: string
   bed_count: number
   max_occupancy: number
+  flex_capacity: number
   attributes: Record<string, unknown>
   available: boolean
   conflictingBookingId: string | null
@@ -21,7 +22,7 @@ export async function getRoomAvailability(
 
   const { data: rooms } = await supabase
     .from('rooms')
-    .select('id, name, bed_count, max_occupancy, attributes')
+    .select('id, name, bed_count, max_occupancy, flex_capacity, attributes')
     .order('sort_order')
 
   if (!rooms) return []
@@ -54,12 +55,13 @@ export async function getRoomAvailability(
     }
   }
 
-  type RoomRow = { id: string; name: string; bed_count: number; max_occupancy: number; attributes: unknown }
+  type RoomRow = { id: string; name: string; bed_count: number; max_occupancy: number; flex_capacity: number; attributes: unknown }
   return (rooms as RoomRow[]).map(room => ({
     id: room.id,
     name: room.name,
     bed_count: room.bed_count,
     max_occupancy: room.max_occupancy,
+    flex_capacity: room.flex_capacity ?? 0,
     attributes: (room.attributes ?? {}) as Record<string, unknown>,
     available: !bookedRoomIds.has(room.id),
     conflictingBookingId: conflictMap.get(room.id) ?? null,

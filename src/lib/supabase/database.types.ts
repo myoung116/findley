@@ -16,11 +16,13 @@ export type Database = {
     Tables: {
       bookings: {
         Row: {
+          adult_count: number
           booking_type: Database["public"]["Enums"]["booking_type"]
           created_at: string
           end_date: string
           guest_count: number
           id: string
+          kid_count: number
           notes: string | null
           rooms_requested: string[]
           season: Database["public"]["Enums"]["season_type"]
@@ -30,11 +32,13 @@ export type Database = {
           waiver_eligible: boolean
         }
         Insert: {
+          adult_count?: number
           booking_type: Database["public"]["Enums"]["booking_type"]
           created_at?: string
           end_date: string
           guest_count?: number
           id?: string
+          kid_count?: number
           notes?: string | null
           rooms_requested?: string[]
           season: Database["public"]["Enums"]["season_type"]
@@ -44,11 +48,13 @@ export type Database = {
           waiver_eligible?: boolean
         }
         Update: {
+          adult_count?: number
           booking_type?: Database["public"]["Enums"]["booking_type"]
           created_at?: string
           end_date?: string
           guest_count?: number
           id?: string
+          kid_count?: number
           notes?: string | null
           rooms_requested?: string[]
           season?: Database["public"]["Enums"]["season_type"]
@@ -257,6 +263,7 @@ export type Database = {
         Row: {
           attributes: Json
           bed_count: number
+          flex_capacity: number
           id: string
           max_occupancy: number
           name: string
@@ -265,6 +272,7 @@ export type Database = {
         Insert: {
           attributes?: Json
           bed_count: number
+          flex_capacity?: number
           id?: string
           max_occupancy: number
           name: string
@@ -273,6 +281,7 @@ export type Database = {
         Update: {
           attributes?: Json
           bed_count?: number
+          flex_capacity?: number
           id?: string
           max_occupancy?: number
           name?: string

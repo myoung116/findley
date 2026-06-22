@@ -14,7 +14,7 @@ export interface RoomAttributes {
   notes?: string
 }
 
-interface Room { id: string; name: string; bed_count: number; max_occupancy: number; attributes?: RoomAttributes | null }
+interface Room { id: string; name: string; bed_count: number; max_occupancy: number; flex_capacity?: number; attributes?: RoomAttributes | null }
 
 interface Props {
   date: Date
@@ -36,6 +36,8 @@ export function DayDetailPanel({ date, bookings, rooms, showRoomDetail, canManag
 
   const peak = isPeakSeason(date)
   const totalGuests = dayBookings.reduce((sum, b) => sum + b.guestCount, 0)
+  const totalAdults = dayBookings.reduce((sum, b) => sum + b.adultCount, 0)
+  const totalKids = dayBookings.reduce((sum, b) => sum + b.kidCount, 0)
 
   // Build roomId → guest count map from all bookings on this day
   // Note: once bed optimizer is complete, replace guestCount with per-room
@@ -115,6 +117,12 @@ export function DayDetailPanel({ date, bookings, rooms, showRoomDetail, canManag
                 <span className="text-slate-500 dark:text-slate-400">Total guests</span>
                 <span className="font-medium text-slate-700 dark:text-slate-200">{totalGuests}</span>
               </div>
+              {totalGuests > 0 && (
+                <div className="flex justify-between text-xs">
+                  <span className="text-slate-400 dark:text-slate-500">Adults / kids</span>
+                  <span className="text-slate-500 dark:text-slate-400">{totalAdults} adult{totalAdults === 1 ? '' : 's'} · {totalKids} kid{totalKids === 1 ? '' : 's'}</span>
+                </div>
+              )}
               <div className="flex justify-between">
                 <span className="text-slate-500 dark:text-slate-400">Rooms occupied</span>
                 <span className="font-medium text-slate-700 dark:text-slate-200">{occupiedRoomIds.size} of {rooms.length}</span>
@@ -171,7 +179,10 @@ function RoomRow({ room, guests }: { room: Room; guests: number }) {
   const [expanded, setExpanded] = useState(false)
   const attrs = room.attributes ?? {}
   const beds = attrs.beds ?? []
-  const capacity = room.max_occupancy
+  const flex = room.flex_capacity ?? 0
+  // Capacity for occupancy = real beds + flex sleeping (pack/play, air mattress,
+  // couch), so a kid on a flex spot doesn't read as over-full.
+  const capacity = room.max_occupancy + flex
   const fillPct = capacity > 0 ? Math.min(100, Math.round((guests / capacity) * 100)) : 0
   const occupied = guests > 0
 
@@ -222,12 +233,15 @@ function RoomRow({ room, guests }: { room: Room; guests: number }) {
           {occupied && (
             <p className="opacity-80">
               <span className="opacity-60">Guests: </span>
-              {guests} of {capacity} beds used
+              {guests} of {capacity} sleeping spots used
               {/* TODO: replace with per-bed assignments once optimizer is complete */}
             </p>
           )}
           {bedSummary && (
             <p className="opacity-80"><span className="opacity-60">Beds: </span>{bedSummary}</p>
+          )}
+          {flex > 0 && (
+            <p className="opacity-80"><span className="opacity-60">Flex sleeping: </span>{flex} (pack/play, air mattress, couch)</p>
           )}
           {attrs.bathroom && (
             <p className="opacity-80"><span className="opacity-60">Bathroom: </span>{attrs.bathroom === 'private' ? 'Attached private' : 'Shared'}</p>
@@ -268,7 +282,12 @@ function FamilyRow({ booking, rooms, showRooms, canManage, onManage }: {
         )}
       </div>
       <div className="text-right shrink-0 space-y-1">
-        <span className="text-xs font-medium text-slate-600 dark:text-slate-300 block">{booking.guestCount} guests</span>
+        <span className="text-xs font-medium text-slate-600 dark:text-slate-300 block">
+          {booking.guestCount} guest{booking.guestCount === 1 ? '' : 's'}
+          {booking.kidCount > 0 && (
+            <span className="block font-normal text-slate-400 dark:text-slate-500">{booking.adultCount} adult{booking.adultCount === 1 ? '' : 's'} · {booking.kidCount} kid{booking.kidCount === 1 ? '' : 's'}</span>
+          )}
+        </span>
         {canManage && onManage && (
           <button
             onClick={() => onManage({ id: booking.id, startDate: booking.startDate, endDate: booking.endDate, bookingType: booking.bookingType, status: booking.status, guestCount: booking.guestCount })}

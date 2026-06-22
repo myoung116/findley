@@ -13,7 +13,9 @@ export interface BookingPayload {
   endDate: string
   roomIds: string[]
   guestCount: number
-  guests: Array<{ name: string; relationship: string }>
+  adultCount: number
+  kidCount: number
+  guests: Array<{ name: string; relationship: string; isChild?: boolean }>
   notes: string
   acknowledgedResponsibility: boolean
 }
@@ -185,6 +187,8 @@ export async function submitBooking(payload: BookingPayload): Promise<SubmitResu
       season,
       rooms_requested: payload.roomIds,
       guest_count: payload.guestCount,
+      adult_count: payload.adultCount,
+      kid_count: payload.kidCount,
       notes: payload.notes || null,
     })
     .select('id, created_at')

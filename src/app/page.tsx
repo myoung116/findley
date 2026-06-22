@@ -52,7 +52,7 @@ export default async function HomePage() {
   // All visible bookings for the calendar
   const bookingQuery = supabase
     .from('bookings')
-    .select(`id, user_id, start_date, end_date, booking_type, status, rooms_requested, guest_count`)
+    .select(`id, user_id, start_date, end_date, booking_type, status, rooms_requested, guest_count, adult_count, kid_count`)
     .not('status', 'in', '(cancelled,bumped)')
 
   // Cousins can now book so they see their own pending too (handled by RLS)
@@ -63,7 +63,7 @@ export default async function HomePage() {
   type RawBooking = {
     id: string; user_id: string; start_date: string; end_date: string
     booking_type: BookingType; status: BookingStatus; rooms_requested: string[]
-    guest_count: number
+    guest_count: number; adult_count: number; kid_count: number
   }
   const rawBookingList = (rawBookings ?? []) as RawBooking[]
 
@@ -94,11 +94,13 @@ export default async function HomePage() {
     status: b.status,
     roomsRequested: b.rooms_requested ?? [],
     guestCount: b.guest_count,
+    adultCount: b.adult_count,
+    kidCount: b.kid_count,
   }))
 
   const { data: rooms } = await supabase
     .from('rooms')
-    .select('id, name, bed_count, max_occupancy, attributes')
+    .select('id, name, bed_count, max_occupancy, flex_capacity, attributes')
     .order('sort_order')
 
   // Dashboard: user's own bookings (all time, confirmed)

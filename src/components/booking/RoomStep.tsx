@@ -97,7 +97,8 @@ function RoomCard({
           <div>
             <p className="font-medium text-sm text-slate-800 dark:text-slate-100">{room.name}</p>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              {room.bed_count} bed{room.bed_count !== 1 ? 's' : ''} &middot; max {room.max_occupancy}
+              {room.bed_count} bed{room.bed_count !== 1 ? 's' : ''} &middot; sleeps {room.max_occupancy}
+              {room.flex_capacity > 0 && ` (+${room.flex_capacity} flex)`}
             </p>
           </div>
           <div className="flex items-center gap-2">
@@ -139,7 +140,9 @@ export function RoomStep({ startDate, endDate, selectedRoomIds, totalGuests, onT
   }, [startDate, endDate])
 
   const selectedRooms = rooms.filter(r => selectedRoomIds.includes(r.id))
-  const totalCapacity = selectedRooms.reduce((sum, r) => sum + r.max_occupancy, 0)
+  const totalBeds = selectedRooms.reduce((sum, r) => sum + r.max_occupancy, 0)
+  const totalFlex = selectedRooms.reduce((sum, r) => sum + (r.flex_capacity ?? 0), 0)
+  const totalCapacity = totalBeds + totalFlex // beds + flex sleeping spots
   const capacityOk = totalCapacity >= totalGuests
   const capacityShort = selectedRoomIds.length > 0 && !capacityOk
 
@@ -183,7 +186,8 @@ export function RoomStep({ startDate, endDate, selectedRoomIds, totalGuests, onT
           <span className="mt-0.5">{capacityShort ? '(!)' : '(ok)'}</span>
           <div>
             <p className="font-medium">
-              {selectedRoomIds.length} room{selectedRoomIds.length !== 1 ? 's' : ''} &middot; {totalCapacity} beds total
+              {selectedRoomIds.length} room{selectedRoomIds.length !== 1 ? 's' : ''} &middot; sleeps {totalCapacity}
+              {totalFlex > 0 && <span className="font-normal opacity-80"> ({totalBeds} bed{totalBeds !== 1 ? 's' : ''} + {totalFlex} flex)</span>}
             </p>
             {capacityShort ? (
               <p className="text-xs mt-0.5 opacity-80">

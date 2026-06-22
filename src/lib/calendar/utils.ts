@@ -22,6 +22,8 @@ export interface CalendarBooking {
   status: BookingStatus
   roomsRequested: string[]
   guestCount: number
+  adultCount: number
+  kidCount: number
 }
 
 export interface CalendarDay {

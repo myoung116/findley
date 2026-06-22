@@ -6,6 +6,7 @@ import { ThemeToggle } from '@/components/ThemeToggle'
 import { UserManagement, type UserRow } from './UserManagement'
 import { PendingBookings, type PendingBookingRow } from './PendingBookings'
 import { FeedbackQueue, type FeedbackRow } from './FeedbackQueue'
+import { RoomFlexEditor, type RoomFlexRow } from './RoomFlexEditor'
 import type { BookingType, UserRole } from '@/lib/supabase/types'
 
 type ConflictWithBookings = {
@@ -77,6 +78,13 @@ export default async function AdminPage() {
 
   const feedbackItems = (feedbackRaw ?? []) as FeedbackRow[]
 
+  // Rooms (for flex sleeping-capacity editor)
+  const { data: roomsRaw } = await supabase
+    .from('rooms')
+    .select('id, name, bed_count, max_occupancy, flex_capacity')
+    .order('sort_order')
+  const rooms = (roomsRaw ?? []) as RoomFlexRow[]
+
   // Open conflicts with booking details
   const { data: conflictsRaw } = await supabase
     .from('conflicts')
@@ -142,6 +150,9 @@ export default async function AdminPage() {
 
         {/* Feedback */}
         <FeedbackQueue items={feedbackItems} />
+
+        {/* Room flex sleeping capacity */}
+        <RoomFlexEditor rooms={rooms} />
 
         {/* Conflict Queue */}
         <section>
