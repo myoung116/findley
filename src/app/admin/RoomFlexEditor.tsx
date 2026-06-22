@@ -33,9 +33,14 @@ function RoomFlexRowEditor({ room }: { room: RoomFlexRow }) {
   const [pending, startTransition] = useTransition()
 
   const dirty = flex !== room.flex_capacity
+  const overMax = flex > 6
 
   function save() {
     setError(null)
+    if (overMax) {
+      setError('A room can have at most 6 flex sleeping spots.')
+      return
+    }
     startTransition(async () => {
       const res = await updateRoomFlex(room.id, flex)
       if (res.success) {
@@ -57,8 +62,10 @@ function RoomFlexRowEditor({ room }: { room: RoomFlexRow }) {
         </p>
       </div>
       <div className="flex items-center gap-3 shrink-0">
-        {error && <span className="text-xs text-red-600 dark:text-red-400">{error}</span>}
-        {saved && <span className="text-xs text-green-600 dark:text-green-400">Saved ✓</span>}
+        {(error || overMax) && (
+          <span className="text-xs text-red-600 dark:text-red-400">{error ?? 'Max 6 flex spots.'}</span>
+        )}
+        {saved && !overMax && <span className="text-xs text-green-600 dark:text-green-400">Saved ✓</span>}
         <div className="flex items-center gap-1.5">
           <span className="text-xs text-slate-400 dark:text-slate-500">flex</span>
           <button
@@ -79,7 +86,7 @@ function RoomFlexRowEditor({ room }: { room: RoomFlexRow }) {
         </div>
         <button
           onClick={save}
-          disabled={!dirty || pending}
+          disabled={!dirty || pending || overMax}
           className="text-xs bg-blue-600 text-white px-3 py-1.5 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-40"
         >
           {pending ? 'Saving…' : 'Save'}

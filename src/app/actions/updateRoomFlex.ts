@@ -24,6 +24,9 @@ export async function updateRoomFlex(
   if (!Number.isInteger(flexCapacity) || flexCapacity < 0) {
     return { success: false, error: 'Flex capacity must be 0 or a positive whole number.' }
   }
+  if (flexCapacity > 6) {
+    return { success: false, error: 'A room can have at most 6 flex sleeping spots.' }
+  }
 
   const admin = createAdminClient()
   const { error } = await admin
