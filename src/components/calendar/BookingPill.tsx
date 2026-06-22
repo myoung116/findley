@@ -8,7 +8,7 @@ interface Props {
   onClick?: (booking: CalendarBooking) => void
 }
 
-// Small avatar shown on bookings that include Calvin. Hides itself if the
+// Larger avatar shown on bookings that include Calvin. Hides itself if the
 // image file isn't present so a missing asset never breaks the calendar.
 function CalvinAvatar() {
   const [ok, setOk] = useState(true)
@@ -20,7 +20,7 @@ function CalvinAvatar() {
       alt="Calvin"
       title="Calvin is staying"
       onError={() => setOk(false)}
-      className="inline-block w-4 h-4 rounded-full object-cover mr-1 align-middle ring-1 ring-white/70 dark:ring-slate-900/70"
+      className="block w-7 h-7 rounded-full object-cover ring-1 ring-white dark:ring-slate-900 shadow-sm"
     />
   )
 }
@@ -29,19 +29,19 @@ export function BookingPill({ booking, onClick }: Props) {
   const style = BOOKING_TYPE_STYLES[booking.bookingType]
   const opacity = STATUS_OPACITY[booking.status]
   const hasCalvin = booking.memberNames.some(n => n.toLowerCase().includes('calvin'))
+  const label = `${booking.userName} · ${style.label}`
 
+  // Calvin's stays show his face; everyone else is a small colour block.
   return (
     <button
       onClick={() => onClick?.(booking)}
-      className={`
-        w-full text-left text-[10px] leading-tight px-1 py-px rounded border truncate font-medium
-        ${style.bg} ${style.text} ${opacity}
-        hover:brightness-95 transition-all
-      `}
+      title={label}
+      aria-label={label}
+      className={`shrink-0 hover:brightness-95 transition-all ${opacity}`}
     >
-      {hasCalvin && <CalvinAvatar />}
-      {booking.userName}
-      <span className="ml-1 opacity-60 font-normal">{style.label}</span>
+      {hasCalvin
+        ? <CalvinAvatar />
+        : <span className={`block w-4 h-4 rounded-sm ${style.solid}`} />}
     </button>
   )
 }

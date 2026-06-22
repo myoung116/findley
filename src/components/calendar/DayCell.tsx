@@ -82,16 +82,16 @@ export function DayCell({ day, selected, inDragRange, isDragStart, isDragEnd, on
         )
       })()}
 
-      <div className="space-y-0.5">
-        {day.bookings.slice(0, 3).map(booking => (
+      <div className="flex flex-wrap items-center gap-1">
+        {day.bookings.slice(0, 8).map(booking => (
           <BookingPill
             key={booking.id}
             booking={booking}
             onClick={() => onBookingClick?.(booking)}
           />
         ))}
-        {day.bookings.length > 3 && (
-          <p className="text-[10px] text-slate-400 dark:text-slate-500 pl-1">+{day.bookings.length - 3} more</p>
+        {day.bookings.length > 8 && (
+          <span className="text-[10px] text-slate-400 dark:text-slate-500 leading-none self-center">+{day.bookings.length - 8}</span>
         )}
       </div>
     </div>

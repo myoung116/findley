@@ -65,11 +65,11 @@ export function buildCalendarGrid(year: number, month: number, bookings: Calenda
   })
 }
 
-export const BOOKING_TYPE_STYLES: Record<BookingType, { bg: string; text: string; label: string }> = {
-  exclusive_offseason: { bg: 'bg-amber-100 border-amber-400',  text: 'text-amber-800', label: 'Exclusive' },
-  exclusive_peak:      { bg: 'bg-blue-100 border-blue-400',    text: 'text-blue-800',  label: 'Exclusive' },
-  open_shared:         { bg: 'bg-green-100 border-green-400',  text: 'text-green-800', label: 'Open' },
-  lastminute_guest:    { bg: 'bg-purple-100 border-purple-400', text: 'text-purple-800', label: 'Last Min' },
+export const BOOKING_TYPE_STYLES: Record<BookingType, { bg: string; text: string; solid: string; label: string }> = {
+  exclusive_offseason: { bg: 'bg-amber-100 border-amber-400',  text: 'text-amber-800', solid: 'bg-amber-400',  label: 'Exclusive' },
+  exclusive_peak:      { bg: 'bg-blue-100 border-blue-400',    text: 'text-blue-800',  solid: 'bg-blue-500',   label: 'Exclusive' },
+  open_shared:         { bg: 'bg-green-100 border-green-400',  text: 'text-green-800', solid: 'bg-green-500',  label: 'Open' },
+  lastminute_guest:    { bg: 'bg-purple-100 border-purple-400', text: 'text-purple-800', solid: 'bg-purple-500', label: 'Last Min' },
 }
 
 export const STATUS_OPACITY: Record<BookingStatus, string> = {
