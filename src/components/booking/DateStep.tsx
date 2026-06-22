@@ -8,39 +8,13 @@ interface Props {
   bookingType: BookingType
   startDate: string
   endDate: string
-  adultCount: number
-  kidCount: number
   onStartChange: (date: string) => void
   onEndChange: (date: string) => void
-  onAdultCountChange: (count: number) => void
-  onKidCountChange: (count: number) => void
 }
 
 const END_DATE_LOCKED: BookingType[] = ['exclusive_offseason', 'exclusive_peak']
 
-function Stepper({ value, min, onChange }: { value: number; min: number; onChange: (n: number) => void }) {
-  return (
-    <div className="flex items-center gap-4">
-      <button
-        type="button"
-        onClick={() => onChange(Math.max(min, value - 1))}
-        className="w-9 h-9 rounded-full border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center justify-center text-xl font-medium transition-colors"
-      >
-        −
-      </button>
-      <span className="text-2xl font-bold text-slate-800 dark:text-slate-100 w-6 text-center">{value}</span>
-      <button
-        type="button"
-        onClick={() => onChange(value + 1)}
-        className="w-9 h-9 rounded-full border border-slate-300 dark:border-slate-600 text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center justify-center text-xl font-medium transition-colors"
-      >
-        +
-      </button>
-    </div>
-  )
-}
-
-export function DateStep({ bookingType, startDate, endDate, adultCount, kidCount, onStartChange, onEndChange, onAdultCountChange, onKidCountChange }: Props) {
+export function DateStep({ bookingType, startDate, endDate, onStartChange, onEndChange }: Props) {
   const endLocked = END_DATE_LOCKED.includes(bookingType)
   const mondayOnly = bookingType === 'exclusive_offseason' || bookingType === 'exclusive_peak'
 
@@ -100,30 +74,6 @@ export function DateStep({ bookingType, startDate, endDate, adultCount, kidCount
           Exclusivity ends Friday morning. Weekend access (Fri afternoon – Sun) reverts to open/waiver priority.
         </p>
       )}
-
-      {/* Family member headcount — split adults / kids */}
-      <div className="border-t border-slate-100 dark:border-slate-700 pt-4 space-y-4">
-        <p className="text-sm font-medium text-slate-700 dark:text-slate-200">
-          How many family members attending?
-          <span className="block text-xs font-normal text-slate-400 dark:text-slate-500 mt-0.5">
-            Include yourself. Counting kids helps the family plan meals.
-          </span>
-        </p>
-        <div className="flex items-center justify-between">
-          <div>
-            <span className="block text-sm font-medium text-slate-700 dark:text-slate-200">Adults</span>
-            <span className="block text-xs text-slate-400 dark:text-slate-500">Ages 13+</span>
-          </div>
-          <Stepper value={adultCount} min={1} onChange={onAdultCountChange} />
-        </div>
-        <div className="flex items-center justify-between">
-          <div>
-            <span className="block text-sm font-medium text-slate-700 dark:text-slate-200">Kids</span>
-            <span className="block text-xs text-slate-400 dark:text-slate-500">Under 13 (incl. pack/play, air mattress)</span>
-          </div>
-          <Stepper value={kidCount} min={0} onChange={onKidCountChange} />
-        </div>
-      </div>
     </div>
   )
 }

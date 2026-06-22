@@ -2,13 +2,14 @@
 
 import { useState, useTransition } from 'react'
 import { useRouter } from 'next/navigation'
-import { addBranchMember, removeBranchMember, updateMemberRoomPreferences } from '@/app/actions/branchMembers'
+import { addBranchMember, removeBranchMember, updateMemberRoomPreferences, setMemberIsChild } from '@/app/actions/branchMembers'
 
 export interface BranchMember {
   id: string
   name: string
   hasAccount: boolean
   preferredRoomIds: string[]
+  isChild: boolean
 }
 
 interface Room { id: string; name: string }
@@ -16,6 +17,7 @@ interface Room { id: string; name: string }
 export function BranchMembers({ members, rooms }: { members: BranchMember[]; rooms: Room[] }) {
   const router = useRouter()
   const [newName, setNewName] = useState('')
+  const [newIsChild, setNewIsChild] = useState(false)
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
 
@@ -23,8 +25,8 @@ export function BranchMembers({ members, rooms }: { members: BranchMember[]; roo
     setError(null)
     if (!newName.trim()) return
     startTransition(async () => {
-      const res = await addBranchMember(newName)
-      if (res.success) { setNewName(''); router.refresh() }
+      const res = await addBranchMember(newName, newIsChild)
+      if (res.success) { setNewName(''); setNewIsChild(false); router.refresh() }
       else setError(res.error ?? 'Could not add member.')
     })
   }
@@ -49,6 +51,10 @@ export function BranchMembers({ members, rooms }: { members: BranchMember[]; roo
           placeholder="Add a family member (e.g. a child or spouse)"
           className="flex-1 text-sm rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500"
         />
+        <label className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 cursor-pointer whitespace-nowrap">
+          <input type="checkbox" checked={newIsChild} onChange={e => setNewIsChild(e.target.checked)} className="accent-blue-600" />
+          Child
+        </label>
         <button
           onClick={add}
           disabled={pending || !newName.trim()}
@@ -66,10 +72,21 @@ function MemberRow({ member, rooms }: { member: BranchMember; rooms: Room[] }) {
   const router = useRouter()
   const [editing, setEditing] = useState(false)
   const [selected, setSelected] = useState<string[]>(member.preferredRoomIds)
+  const [child, setChild] = useState(member.isChild)
   const [pending, startTransition] = useTransition()
   const [error, setError] = useState<string | null>(null)
 
   const roomName = (id: string) => rooms.find(r => r.id === id)?.name ?? 'Unknown'
+
+  function toggleChild() {
+    const next = !child
+    setChild(next)
+    startTransition(async () => {
+      const res = await setMemberIsChild(member.id, next)
+      if (res.success) router.refresh()
+      else { setChild(!next); setError(res.error ?? 'Could not update.') }
+    })
+  }
 
   function toggle(id: string) {
     setSelected(prev => prev.includes(id) ? prev.filter(r => r !== id) : [...prev, id])
@@ -102,6 +119,19 @@ function MemberRow({ member, rooms }: { member: BranchMember; rooms: Room[] }) {
             {member.hasAccount && (
               <span className="text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">account</span>
             )}
+            <button
+              type="button"
+              onClick={toggleChild}
+              disabled={pending}
+              title="Toggle adult / child"
+              className={`text-[10px] uppercase tracking-wide px-1.5 py-0.5 rounded-full transition-colors disabled:opacity-50 ${
+                child
+                  ? 'bg-amber-100 dark:bg-amber-900/40 text-amber-700 dark:text-amber-300'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400'
+              }`}
+            >
+              {child ? 'child' : 'adult'}
+            </button>
           </div>
           {!editing && (
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">

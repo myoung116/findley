@@ -125,6 +125,36 @@ export type Database = {
           },
         ]
       }
+      booking_members: {
+        Row: {
+          booking_id: string
+          member_id: string
+        }
+        Insert: {
+          booking_id: string
+          member_id: string
+        }
+        Update: {
+          booking_id?: string
+          member_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_members_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "booking_members_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "branch_members"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       branch_members: {
         Row: {
           id: string
@@ -132,6 +162,7 @@ export type Database = {
           name: string
           linked_user_id: string | null
           preferred_room_ids: string[]
+          is_child: boolean
           created_at: string
         }
         Insert: {
@@ -140,6 +171,7 @@ export type Database = {
           name: string
           linked_user_id?: string | null
           preferred_room_ids?: string[]
+          is_child?: boolean
           created_at?: string
         }
         Update: {
@@ -148,6 +180,7 @@ export type Database = {
           name?: string
           linked_user_id?: string | null
           preferred_room_ids?: string[]
+          is_child?: boolean
           created_at?: string
         }
         Relationships: [

@@ -23,7 +23,8 @@ async function getManager(): Promise<{ caller: Caller } | { error: string }> {
 }
 
 export async function addBranchMember(
-  name: string
+  name: string,
+  isChild = false
 ): Promise<{ success: boolean; error?: string }> {
   const m = await getManager()
   if ('error' in m) return { success: false, error: m.error }
@@ -35,7 +36,30 @@ export async function addBranchMember(
   const { error } = await admin.from('branch_members').insert({
     family_branch: m.caller.family_branch,
     name: trimmed,
+    is_child: isChild,
   })
+  if (error) return { success: false, error: error.message }
+  return { success: true }
+}
+
+export async function setMemberIsChild(
+  memberId: string,
+  isChild: boolean
+): Promise<{ success: boolean; error?: string }> {
+  const m = await getManager()
+  if ('error' in m) return { success: false, error: m.error }
+
+  const admin = createAdminClient()
+  const { data: memberData } = await admin
+    .from('branch_members').select('family_branch').eq('id', memberId).single()
+  const member = memberData as { family_branch: FamilyBranch } | null
+  if (!member) return { success: false, error: 'Member not found.' }
+  if (m.caller.role !== 'admin' && member.family_branch !== m.caller.family_branch) {
+    return { success: false, error: 'You can only manage your own branch.' }
+  }
+
+  const { error } = await admin
+    .from('branch_members').update({ is_child: isChild }).eq('id', memberId)
   if (error) return { success: false, error: error.message }
   return { success: true }
 }

@@ -301,6 +301,12 @@ function FamilyRow({ booking, rooms, showRooms, canManage, onManage }: {
           <span className="font-medium text-sm text-slate-800 dark:text-slate-100">{booking.userName}</span>
           <span className={`text-xs px-1.5 py-0.5 rounded-full border ${style.bg} ${style.text}`}>{style.label}</span>
         </div>
+        {booking.memberNames.length > 0 && (
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            <span className="text-slate-400 dark:text-slate-500">With: </span>
+            {booking.memberNames.join(', ')}
+          </p>
+        )}
         {showRooms && bookedRooms.length > 0 && (
           <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">
             {bookedRooms.map(r => r.name).join(', ')}

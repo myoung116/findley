@@ -74,6 +74,7 @@ export default async function HomePage() {
   const bookerIds = Array.from(new Set(rawBookingList.map(b => b.user_id)))
   const nameById = new Map<string, string>()
   const branchById = new Map<string, string>()
+  const memberNamesByBooking = new Map<string, string[]>()
   if (bookerIds.length > 0) {
     const admin = createAdminClient()
     const { data: bookerRows } = await admin
@@ -83,6 +84,21 @@ export default async function HomePage() {
     for (const row of (bookerRows ?? []) as { id: string; name: string; family_branch: string }[]) {
       nameById.set(row.id, row.name)
       branchById.set(row.id, row.family_branch)
+    }
+
+    // Named attendees (branch members included on each booking).
+    const bookingIds = rawBookingList.map(b => b.id)
+    const { data: attendeeRows } = await admin
+      .from('booking_members')
+      .select('booking_id, branch_members ( name )')
+      .in('booking_id', bookingIds)
+    type AttendeeRow = { booking_id: string; branch_members: { name: string } | null }
+    for (const row of (attendeeRows ?? []) as AttendeeRow[]) {
+      const name = row.branch_members?.name
+      if (!name) continue
+      const arr = memberNamesByBooking.get(row.booking_id) ?? []
+      arr.push(name)
+      memberNamesByBooking.set(row.booking_id, arr)
     }
   }
 
@@ -99,6 +115,7 @@ export default async function HomePage() {
     adultCount: b.adult_count,
     kidCount: b.kid_count,
     familyBranch: branchById.get(b.user_id) ?? 'Unknown',
+    memberNames: memberNamesByBooking.get(b.id) ?? [],
   }))
 
   const { data: rooms } = await supabase

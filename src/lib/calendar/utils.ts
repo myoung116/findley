@@ -25,6 +25,7 @@ export interface CalendarBooking {
   adultCount: number
   kidCount: number
   familyBranch: string
+  memberNames: string[]
 }
 
 export interface CalendarDay {

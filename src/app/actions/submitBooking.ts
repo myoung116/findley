@@ -15,6 +15,7 @@ export interface BookingPayload {
   guestCount: number
   adultCount: number
   kidCount: number
+  memberIds: string[]
   guests: Array<{ name: string; relationship: string; isChild?: boolean }>
   notes: string
   acknowledgedResponsibility: boolean
@@ -197,6 +198,25 @@ export async function submitBooking(payload: BookingPayload): Promise<SubmitResu
   const booking = bookingData as { id: string; created_at: string } | null
   if (insertError || !booking) {
     return { success: false, error: 'Failed to submit booking. Please try again.' }
+  }
+
+  // Record named attendees. Only members of the booker's own branch are allowed,
+  // so validate the ids before linking them (admin client: members aren't
+  // readable under the booker's RLS).
+  if (payload.memberIds.length > 0) {
+    const admin = createAdminClient()
+    const { data: validMembers } = await admin
+      .from('branch_members')
+      .select('id')
+      .eq('family_branch', profile.family_branch)
+      .in('id', payload.memberIds)
+
+    const validIds = ((validMembers ?? []) as { id: string }[]).map(m => m.id)
+    if (validIds.length > 0) {
+      await admin.from('booking_members').insert(
+        validIds.map(memberId => ({ booking_id: booking.id, member_id: memberId }))
+      )
+    }
   }
 
   // If this cousin booking needs branch-principal approval, notify the principal(s)

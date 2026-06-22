@@ -1,12 +1,13 @@
 'use client'
 
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { BookingTypeStep } from './BookingTypeStep'
 import { DateStep } from './DateStep'
 import { RoomStep } from './RoomStep'
 import { GuestStep } from './GuestStep'
 import { submitBooking } from '@/app/actions/submitBooking'
+import { getBranchRoster, type RosterMember } from '@/app/actions/getBranchRoster'
 import { BOOKING_TYPE_LABELS } from '@/lib/booking/dates'
 import { ThemeToggle } from '@/components/ThemeToggle'
 import { format, parseISO } from 'date-fns'
@@ -34,16 +35,36 @@ export function BookingForm({ inline, onClose, initialStartDate = '', initialEnd
   const [endDate, setEndDate] = useState(initialEndDate)
   const [selectedRoomIds, setSelectedRoomIds] = useState<string[]>([])
   const [guests, setGuests] = useState<Guest[]>([])
-  const [adultCount, setAdultCount] = useState(1)
-  const [kidCount, setKidCount] = useState(0)
+  const [roster, setRoster] = useState<RosterMember[]>([])
+  const [selectedMemberIds, setSelectedMemberIds] = useState<string[]>([])
+  const [extraAdults, setExtraAdults] = useState(0)
+  const [extraKids, setExtraKids] = useState(0)
   const [roomCapacity, setRoomCapacity] = useState(0)
 
-  // Totals fold the family headcount together with named external guests,
-  // each of whom is an adult unless flagged as a child.
+  // Load the booker's branch roster and auto-select themselves.
+  useEffect(() => {
+    let active = true
+    getBranchRoster().then(members => {
+      if (!active) return
+      setRoster(members)
+      setSelectedMemberIds(members.filter(m => m.isSelf).map(m => m.id))
+    })
+    return () => { active = false }
+  }, [])
+
+  function toggleMember(id: string) {
+    setSelectedMemberIds(prev => prev.includes(id) ? prev.filter(m => m !== id) : [...prev, id])
+  }
+
+  // Headcount is driven by the selected members (each tagged adult/kid), plus
+  // any additional unlisted people and external named guests.
+  const selectedMembers = roster.filter(m => selectedMemberIds.includes(m.id))
+  const memberAdults = selectedMembers.filter(m => !m.isChild).length
+  const memberKids = selectedMembers.filter(m => m.isChild).length
   const guestAdults = guests.filter(g => !g.isChild).length
   const guestKids = guests.filter(g => g.isChild).length
-  const totalAdults = adultCount + guestAdults
-  const totalKids = kidCount + guestKids
+  const totalAdults = memberAdults + extraAdults + guestAdults
+  const totalKids = memberKids + extraKids + guestKids
   const totalParty = totalAdults + totalKids
   const [acknowledged, setAcknowledged] = useState(false)
   const [notes, setNotes] = useState('')
@@ -62,7 +83,7 @@ export function BookingForm({ inline, onClose, initialStartDate = '', initialEnd
     switch (step) {
       case 'type':    return bookingType !== null
       case 'dates':   return !!startDate && !!endDate && startDate < endDate
-      case 'guests':  return acknowledged
+      case 'guests':  return acknowledged && totalParty >= 1
       case 'rooms':   return selectedRoomIds.length > 0 && roomCapacity >= totalParty
       case 'confirm': return true
     }
@@ -82,6 +103,7 @@ export function BookingForm({ inline, onClose, initialStartDate = '', initialEnd
       guestCount: totalParty,
       adultCount: totalAdults,
       kidCount: totalKids,
+      memberIds: selectedMemberIds,
       guests, notes,
       acknowledgedResponsibility: acknowledged,
     })
@@ -110,14 +132,17 @@ export function BookingForm({ inline, onClose, initialStartDate = '', initialEnd
         <DateStep
           bookingType={bookingType}
           startDate={startDate} endDate={endDate}
-          adultCount={adultCount} kidCount={kidCount}
           onStartChange={setStartDate} onEndChange={setEndDate}
-          onAdultCountChange={setAdultCount} onKidCountChange={setKidCount}
         />
       )}
       {step === 'guests' && (
         <GuestStep
+          roster={roster}
+          selectedMemberIds={selectedMemberIds}
+          extraAdults={extraAdults} extraKids={extraKids}
           guests={guests} acknowledged={acknowledged}
+          onToggleMember={toggleMember}
+          onExtraAdultsChange={setExtraAdults} onExtraKidsChange={setExtraKids}
           onGuestsChange={setGuests}
           onAcknowledgeChange={setAcknowledged}
         />
@@ -137,8 +162,10 @@ export function BookingForm({ inline, onClose, initialStartDate = '', initialEnd
             <Row label="Type"  value={BOOKING_TYPE_LABELS[bookingType]} />
             <Row label="Dates" value={`${format(parseISO(startDate), 'MMM d')} – ${format(parseISO(endDate), 'MMM d, yyyy')}`} />
             <Row label="Rooms" value={`${selectedRoomIds.length} selected`} />
-            <Row label="Adults" value={String(totalAdults)} />
-            <Row label="Kids" value={String(totalKids)} />
+            <Row label="Family attending" value={selectedMembers.length > 0 ? selectedMembers.map(m => m.name).join(', ') : 'None selected'} />
+            {(extraAdults + extraKids) > 0 && (
+              <Row label="Additional guests" value={`${extraAdults} adult${extraAdults === 1 ? '' : 's'}, ${extraKids} kid${extraKids === 1 ? '' : 's'}`} />
+            )}
             <Row label="External guests" value={guests.length > 0 ? String(guests.length) : 'None'} />
             <Row label="Total party" value={`${totalParty} (${totalAdults} adult${totalAdults === 1 ? '' : 's'}${totalKids > 0 ? `, ${totalKids} kid${totalKids === 1 ? '' : 's'}` : ''})`} />
           </div>

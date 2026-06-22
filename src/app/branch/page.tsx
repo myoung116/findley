@@ -74,15 +74,16 @@ export default async function BranchPage() {
   // Branch roster.
   const { data: memberRows } = await admin
     .from('branch_members')
-    .select('id, name, linked_user_id, preferred_room_ids')
+    .select('id, name, linked_user_id, preferred_room_ids, is_child')
     .eq('family_branch', branch)
     .order('name')
-  type MemberRow = { id: string; name: string; linked_user_id: string | null; preferred_room_ids: string[] }
+  type MemberRow = { id: string; name: string; linked_user_id: string | null; preferred_room_ids: string[]; is_child: boolean }
   const members: BranchMember[] = ((memberRows ?? []) as MemberRow[]).map(m => ({
     id: m.id,
     name: m.name,
     hasAccount: m.linked_user_id != null,
     preferredRoomIds: m.preferred_room_ids ?? [],
+    isChild: m.is_child,
   }))
 
   return (
