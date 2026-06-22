@@ -20,7 +20,7 @@ function CalvinAvatar() {
       alt="Calvin"
       title="Calvin is staying"
       onError={() => setOk(false)}
-      className="block w-7 h-7 rounded-full object-cover ring-1 ring-white dark:ring-slate-900 shadow-sm"
+      className="block w-10 h-10 rounded-full object-cover ring-1 ring-white dark:ring-slate-900 shadow-sm"
     />
   )
 }
