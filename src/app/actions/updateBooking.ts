@@ -29,8 +29,8 @@ export async function updateBooking(
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { success: false, error: 'Not authenticated' }
 
-  const { data: profileData } = await supabase.from('users').select('role').eq('id', user.id).single()
-  const profile = profileData as { role: string } | null
+  const { data: profileData } = await supabase.from('users').select('role, family_branch').eq('id', user.id).single()
+  const profile = profileData as { role: string; family_branch: FamilyBranch } | null
   if (!profile) return { success: false, error: 'Profile not found' }
 
   const admin = createAdminClient()
@@ -39,17 +39,19 @@ export async function updateBooking(
   const booking = bookingData as { user_id: string; end_date: string; rooms_requested: string[] } | null
   if (!booking) return { success: false, error: 'Booking not found' }
 
-  const isAdmin = profile.role === 'admin'
-  const isOwner = booking.user_id === user.id
-  if (!isAdmin && !isOwner) return { success: false, error: 'Not authorized' }
-
-  const isPast = new Date(booking.end_date) < new Date()
-  if (isPast && !isAdmin) return { success: false, error: 'Past bookings can only be modified by the administrator.' }
-
-  // Owner's branch (for validating member ids).
+  // Owner's branch (for authorization + validating member ids).
   const { data: ownerData } = await admin
     .from('users').select('family_branch').eq('id', booking.user_id).single()
   const ownerBranch = (ownerData as { family_branch: FamilyBranch } | null)?.family_branch
+
+  // Authorization: admin (any), owner, or the principal of the owner's branch.
+  const isAdmin = profile.role === 'admin'
+  const isOwner = booking.user_id === user.id
+  const isBranchPrincipal = profile.role === 'principal' && profile.family_branch === ownerBranch
+  if (!isAdmin && !isOwner && !isBranchPrincipal) return { success: false, error: 'Not authorized' }
+
+  const isPast = new Date(booking.end_date) < new Date()
+  if (isPast && !isAdmin) return { success: false, error: 'Past bookings can only be modified by the administrator.' }
 
   // If dates or rooms changed, make sure the requested rooms are free in the new
   // window (excluding this booking). Edits don't run the bump/waiver cascade.

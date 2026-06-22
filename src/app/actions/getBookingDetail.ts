@@ -28,8 +28,8 @@ export async function getBookingDetail(
   if (!user) return { error: 'Not authenticated.' }
 
   const { data: profileData } = await supabase
-    .from('users').select('role').eq('id', user.id).single()
-  const profile = profileData as { role: string } | null
+    .from('users').select('role, family_branch').eq('id', user.id).single()
+  const profile = profileData as { role: string; family_branch: FamilyBranch } | null
   if (!profile) return { error: 'Profile not found.' }
 
   const admin = createAdminClient()
@@ -46,15 +46,17 @@ export async function getBookingDetail(
   } | null
   if (!booking) return { error: 'Booking not found.' }
 
-  const isOwner = booking.user_id === user.id
-  if (profile.role !== 'admin' && !isOwner) {
-    return { error: 'You are not permitted to edit this booking.' }
-  }
-
-  // Owner's branch + roster (admins may be editing another branch's booking).
+  // Owner's branch + roster (admins/principals may be editing another member's booking).
   const { data: ownerData } = await admin
     .from('users').select('family_branch').eq('id', booking.user_id).single()
   const ownerBranch = (ownerData as { family_branch: FamilyBranch } | null)?.family_branch
+
+  // Authorization: admin (any), owner, or the principal of the owner's branch.
+  const isOwner = booking.user_id === user.id
+  const isBranchPrincipal = profile.role === 'principal' && profile.family_branch === ownerBranch
+  if (profile.role !== 'admin' && !isOwner && !isBranchPrincipal) {
+    return { error: 'You are not permitted to edit this booking.' }
+  }
 
   let roster: RosterMember[] = []
   if (ownerBranch) {

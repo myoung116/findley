@@ -22,11 +22,12 @@ interface Props {
   rooms: Room[]
   showRoomDetail: boolean
   canManageAll?: boolean
+  managerBranch?: string
   onClose: () => void
   onRequestStay?: (date: Date) => void
 }
 
-export function DayDetailPanel({ date, bookings, rooms, showRoomDetail, canManageAll, onClose, onRequestStay }: Props) {
+export function DayDetailPanel({ date, bookings, rooms, showRoomDetail, canManageAll, managerBranch, onClose, onRequestStay }: Props) {
   const [managing, setManaging] = useState<ManageableBooking | null>(null)
   const dayBookings = bookings.filter(b => {
     const start = parseISO(b.startDate)
@@ -108,7 +109,7 @@ export function DayDetailPanel({ date, bookings, rooms, showRoomDetail, canManag
                       <div key={branch}>
                         <p className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 mb-1">{branch}</p>
                         <div className="space-y-2 pl-2 border-l-2 border-slate-100 dark:border-slate-800">
-                          {list.map(b => <FamilyRow key={b.id} booking={b} rooms={rooms} showRooms={showRoomDetail} canManage={canManageAll} onManage={setManaging} />)}
+                          {list.map(b => <FamilyRow key={b.id} booking={b} rooms={rooms} showRooms={showRoomDetail} canManageAll={canManageAll} managerBranch={managerBranch} onManage={setManaging} />)}
                         </div>
                       </div>
                     ))}
@@ -123,7 +124,7 @@ export function DayDetailPanel({ date, bookings, rooms, showRoomDetail, canManag
                       <div key={branch}>
                         <p className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 mb-1">{branch}</p>
                         <div className="space-y-2 pl-2 border-l-2 border-slate-100 dark:border-slate-800">
-                          {list.map(b => <FamilyRow key={b.id} booking={b} rooms={rooms} showRooms={showRoomDetail} canManage={canManageAll} onManage={setManaging} />)}
+                          {list.map(b => <FamilyRow key={b.id} booking={b} rooms={rooms} showRooms={showRoomDetail} canManageAll={canManageAll} managerBranch={managerBranch} onManage={setManaging} />)}
                         </div>
                       </div>
                     ))}
@@ -284,13 +285,16 @@ function RoomRow({ room, guests }: { room: Room; guests: number }) {
   )
 }
 
-function FamilyRow({ booking, rooms, showRooms, canManage, onManage }: {
+function FamilyRow({ booking, rooms, showRooms, canManageAll, managerBranch, onManage }: {
   booking: CalendarBooking
   rooms: Room[]
   showRooms: boolean
-  canManage?: boolean
+  canManageAll?: boolean
+  managerBranch?: string
   onManage?: (b: ManageableBooking) => void
 }) {
+  // Admin manages any booking; a principal manages bookings in their own branch.
+  const canManage = canManageAll || (!!managerBranch && managerBranch === booking.familyBranch)
   const style = BOOKING_TYPE_STYLES[booking.bookingType]
   const bookedRooms = showRooms ? rooms.filter(r => booking.roomsRequested.includes(r.id)) : []
 
