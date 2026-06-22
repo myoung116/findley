@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { CalendarClient } from '@/components/calendar/CalendarClient'
 import { differenceInDays, parseISO, subMonths } from 'date-fns'
 import type { UserRole, BookingType, BookingStatus } from '@/lib/supabase/types'
@@ -51,7 +52,7 @@ export default async function HomePage() {
   // All visible bookings for the calendar
   const bookingQuery = supabase
     .from('bookings')
-    .select(`id, user_id, start_date, end_date, booking_type, status, rooms_requested, guest_count, users ( name )`)
+    .select(`id, user_id, start_date, end_date, booking_type, status, rooms_requested, guest_count`)
     .not('status', 'in', '(cancelled,bumped)')
 
   // Cousins can now book so they see their own pending too (handled by RLS)
@@ -62,12 +63,31 @@ export default async function HomePage() {
   type RawBooking = {
     id: string; user_id: string; start_date: string; end_date: string
     booking_type: BookingType; status: BookingStatus; rooms_requested: string[]
-    guest_count: number; users: { name: string } | null
+    guest_count: number
   }
-  const bookings: CalendarBooking[] = ((rawBookings ?? []) as RawBooking[]).map(b => ({
+  const rawBookingList = (rawBookings ?? []) as RawBooking[]
+
+  // Resolve booker names. The `users` table RLS only lets a member read their own
+  // profile, so a direct join returns null for everyone else. Look the names up
+  // with the admin client (service role, bypasses RLS) so all roles can see who
+  // else is booked — without exposing emails or relaxing the users-table policy.
+  const bookerIds = Array.from(new Set(rawBookingList.map(b => b.user_id)))
+  const nameById = new Map<string, string>()
+  if (bookerIds.length > 0) {
+    const admin = createAdminClient()
+    const { data: bookerRows } = await admin
+      .from('users')
+      .select('id, name')
+      .in('id', bookerIds)
+    for (const row of (bookerRows ?? []) as { id: string; name: string }[]) {
+      nameById.set(row.id, row.name)
+    }
+  }
+
+  const bookings: CalendarBooking[] = rawBookingList.map(b => ({
     id: b.id,
     userId: b.user_id,
-    userName: b.users?.name ?? 'Unknown',
+    userName: nameById.get(b.user_id) ?? 'Unknown',
     startDate: b.start_date,
     endDate: b.end_date,
     bookingType: b.booking_type,
