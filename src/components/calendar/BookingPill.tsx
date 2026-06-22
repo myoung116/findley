@@ -16,7 +16,7 @@ function CalvinAvatar() {
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src="/calvin.png"
+      src="/calvin.webp"
       alt="Calvin"
       title="Calvin is staying"
       onError={() => setOk(false)}
