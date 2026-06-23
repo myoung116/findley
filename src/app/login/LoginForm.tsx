@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { signUp } from '@/app/actions/signUp'
 
-type Mode = 'signin' | 'signup'
+type Mode = 'signin' | 'signup' | 'forgot'
 
 const FAMILY_BRANCHES = [
   'Grandma and Papa',
@@ -30,6 +30,7 @@ export function LoginForm() {
   const [error, setError] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [signedUp, setSignedUp] = useState(false)
+  const [resetSent, setResetSent] = useState(false)
 
   function reset() {
     setError(null)
@@ -37,6 +38,7 @@ export function LoginForm() {
     setPassword('')
     setName('')
     setFamilyBranch('')
+    setResetSent(false)
   }
 
   function switchMode(next: Mode) {
@@ -79,6 +81,65 @@ export function LoginForm() {
 
     setSignedUp(true)
     setLoading(false)
+  }
+
+  async function handleForgot(e: React.FormEvent) {
+    e.preventDefault()
+    setLoading(true)
+    setError(null)
+
+    const supabase = createClient()
+    const { error } = await supabase.auth.resetPasswordForEmail(email, {
+      redirectTo: `${window.location.origin}/auth/callback?next=/auth/reset`,
+    })
+
+    setLoading(false)
+    if (error) { setError(error.message); return }
+    setResetSent(true)
+  }
+
+  // Forgot-password mode
+  if (mode === 'forgot') {
+    if (resetSent) {
+      return (
+        <div className="text-center space-y-3">
+          <p className="font-semibold text-slate-800 dark:text-slate-100">Check your email</p>
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            If an account exists for <span className="font-medium">{email}</span>, we&apos;ve sent a link to reset your password.
+          </p>
+          <button onClick={() => { setResetSent(false); switchMode('signin') }} className="text-sm text-blue-600 dark:text-blue-400 hover:underline">
+            Back to sign in
+          </button>
+        </div>
+      )
+    }
+    return (
+      <form onSubmit={handleForgot} className="space-y-4">
+        <p className="text-sm text-slate-500 dark:text-slate-400">
+          Enter your email and we&apos;ll send you a link to reset your password.
+        </p>
+        <div>
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Email</label>
+          <input
+            type="email" required value={email}
+            onChange={e => setEmail(e.target.value)}
+            className="w-full border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 placeholder:text-slate-400 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+        {error && <p className="text-sm text-red-600 dark:text-red-400">{error}</p>}
+        <button
+          type="submit" disabled={loading}
+          className="w-full bg-blue-600 text-white rounded-lg py-2 text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
+        >
+          {loading ? 'Sending…' : 'Send reset link'}
+        </button>
+        <p className="text-center text-xs text-slate-500 dark:text-slate-400">
+          <button type="button" onClick={() => switchMode('signin')} className="text-blue-600 dark:text-blue-400 hover:underline font-medium">
+            Back to sign in
+          </button>
+        </p>
+      </form>
+    )
   }
 
   // Success screen after sign-up
@@ -196,7 +257,12 @@ export function LoginForm() {
         />
       </div>
       <div>
-        <label className="block text-sm font-medium text-slate-700 dark:text-slate-200 mb-1">Password</label>
+        <div className="flex items-center justify-between mb-1">
+          <label className="block text-sm font-medium text-slate-700 dark:text-slate-200">Password</label>
+          <button type="button" onClick={() => switchMode('forgot')} className="text-xs text-blue-600 dark:text-blue-400 hover:underline">
+            Forgot password?
+          </button>
+        </div>
         <input
           type="password"
           required
