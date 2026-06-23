@@ -58,7 +58,7 @@ function RoomFlexRowEditor({ room }: { room: RoomFlexRow }) {
       <div className="min-w-0">
         <p className="text-sm font-medium text-slate-800 dark:text-slate-100">{room.name}</p>
         <p className="text-xs text-slate-400 dark:text-slate-500">
-          {room.max_occupancy} bed{room.max_occupancy === 1 ? '' : 's'} · sleeps {room.max_occupancy + flex}
+          {room.max_occupancy} bed spot{room.max_occupancy === 1 ? '' : 's'}{flex > 0 ? ` +${flex} flex` : ''}
         </p>
       </div>
       <div className="flex items-center gap-3 shrink-0">

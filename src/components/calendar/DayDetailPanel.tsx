@@ -212,15 +212,18 @@ function RoomRow({ room, guests }: { room: Room; guests: number }) {
   const capacity = room.max_occupancy + flex
   const fillPct = capacity > 0 ? Math.min(100, Math.round((guests / capacity) * 100)) : 0
   const occupied = guests > 0
+  // Beds are the standard capacity; flex shows as a separate "+N" counter.
+  const capLabel = flex > 0 ? `${room.max_occupancy}+${flex}` : `${room.max_occupancy}`
+  const occLabel = `${guests}/${capLabel}`
 
   // Colour scheme: empty=green, partial=green, getting full=amber, full/over=red
   const scheme = !occupied
     ? { wrap: 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400', bar: 'bg-green-400 dark:bg-green-500', label: 'Open' }
     : fillPct >= 90
-    ? { wrap: 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400',   bar: 'bg-red-400 dark:bg-red-500',   label: `${guests}/${capacity}` }
+    ? { wrap: 'bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400',   bar: 'bg-red-400 dark:bg-red-500',   label: occLabel }
     : fillPct >= 60
-    ? { wrap: 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400', bar: 'bg-amber-400 dark:bg-amber-500', label: `${guests}/${capacity}` }
-    : { wrap: 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400', bar: 'bg-green-400 dark:bg-green-500', label: `${guests}/${capacity}` }
+    ? { wrap: 'bg-amber-50 dark:bg-amber-900/20 text-amber-700 dark:text-amber-400', bar: 'bg-amber-400 dark:bg-amber-500', label: occLabel }
+    : { wrap: 'bg-green-50 dark:bg-green-900/20 text-green-700 dark:text-green-400', bar: 'bg-green-400 dark:bg-green-500', label: occLabel }
 
   const bedCounts: Record<string, number> = {}
   for (const bed of beds) bedCounts[bed] = (bedCounts[bed] ?? 0) + 1
@@ -260,7 +263,7 @@ function RoomRow({ room, guests }: { room: Room; guests: number }) {
           {occupied && (
             <p className="opacity-80">
               <span className="opacity-60">Guests: </span>
-              {guests} of {capacity} sleeping spots used
+              {guests} here · {room.max_occupancy} bed spot{room.max_occupancy === 1 ? '' : 's'}{flex > 0 ? ` +${flex} flex` : ''}
               {/* TODO: replace with per-bed assignments once optimizer is complete */}
             </p>
           )}

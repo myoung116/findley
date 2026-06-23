@@ -104,8 +104,8 @@ function RoomCard({
           <div>
             <p className="font-medium text-sm text-slate-800 dark:text-slate-100">{room.name}</p>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              {room.bed_count} bed{room.bed_count !== 1 ? 's' : ''} &middot; sleeps {room.capacity}
-              {room.flex_capacity > 0 && ` (${room.max_occupancy} beds +${room.flex_capacity} flex)`}
+              {room.max_occupancy} bed spot{room.max_occupancy !== 1 ? 's' : ''}
+              {room.flex_capacity > 0 && <span className="text-slate-400 dark:text-slate-500"> &middot; +{room.flex_capacity} flex</span>}
             </p>
             {isShared && room.shared && (
               <p className={`text-xs mt-0.5 font-medium ${room.remaining > 0 ? 'text-green-600 dark:text-green-400' : 'text-red-500 dark:text-red-400'}`}>
@@ -155,8 +155,10 @@ export function RoomStep({ startDate, endDate, selectedRoomIds, totalGuests, boo
   }, [startDate, endDate, excludeBookingId, bookingType, totalGuests])
 
   const selectedRooms = rooms.filter(r => selectedRoomIds.includes(r.id))
+  const totalBeds = selectedRooms.reduce((sum, r) => sum + r.max_occupancy, 0)
+  const totalFlex = selectedRooms.reduce((sum, r) => sum + (r.flex_capacity ?? 0), 0)
   // For shared stays the usable space is what's left in each room; for exclusive
-  // stays it's the whole room.
+  // stays it's the whole room (beds + flex).
   const totalCapacity = selectedRooms.reduce((sum, r) => sum + (isShared ? r.remaining : r.capacity), 0)
   const capacityOk = totalCapacity >= totalGuests
   const capacityShort = selectedRoomIds.length > 0 && !capacityOk
@@ -202,7 +204,10 @@ export function RoomStep({ startDate, endDate, selectedRoomIds, totalGuests, boo
           <span className="mt-0.5">{capacityShort ? '(!)' : '(ok)'}</span>
           <div>
             <p className="font-medium">
-              {selectedRoomIds.length} room{selectedRoomIds.length !== 1 ? 's' : ''} &middot; {isShared ? `${totalCapacity} open spot${totalCapacity === 1 ? '' : 's'}` : `sleeps ${totalCapacity}`}
+              {selectedRoomIds.length} room{selectedRoomIds.length !== 1 ? 's' : ''} &middot;{' '}
+              {isShared
+                ? `${totalCapacity} open spot${totalCapacity === 1 ? '' : 's'}`
+                : `${totalBeds} bed spot${totalBeds === 1 ? '' : 's'}${totalFlex > 0 ? ` +${totalFlex} flex` : ''}`}
             </p>
             {capacityShort ? (
               <p className="text-xs mt-0.5 opacity-80">
