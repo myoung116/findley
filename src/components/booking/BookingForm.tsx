@@ -152,6 +152,7 @@ export function BookingForm({ inline, onClose, initialStartDate = '', initialEnd
           startDate={startDate} endDate={endDate}
           selectedRoomIds={selectedRoomIds} onToggleRoom={toggleRoom}
           totalGuests={totalParty}
+          bookingType={bookingType ?? undefined}
           onCapacityChange={setRoomCapacity}
         />
       )}

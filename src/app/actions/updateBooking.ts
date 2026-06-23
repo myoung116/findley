@@ -3,10 +3,12 @@
 import { createClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { roomsConflict } from '@/lib/conflicts/bump'
-import type { FamilyBranch } from '@/lib/supabase/types'
+import type { FamilyBranch, BookingType } from '@/lib/supabase/types'
 import type { Database } from '@/lib/supabase/database.types'
 
 type BookingUpdate = Database['public']['Tables']['bookings']['Update']
+
+const EXCLUSIVE_TYPES: BookingType[] = ['exclusive_offseason', 'exclusive_peak']
 
 interface UpdateBookingPayload {
   notes?: string
@@ -35,8 +37,11 @@ export async function updateBooking(
 
   const admin = createAdminClient()
   const { data: bookingData } = await admin
-    .from('bookings').select('user_id, end_date, rooms_requested').eq('id', bookingId).single()
-  const booking = bookingData as { user_id: string; end_date: string; rooms_requested: string[] } | null
+    .from('bookings').select('user_id, end_date, rooms_requested, booking_type, guest_count').eq('id', bookingId).single()
+  const booking = bookingData as {
+    user_id: string; end_date: string; rooms_requested: string[]
+    booking_type: BookingType; guest_count: number
+  } | null
   if (!booking) return { success: false, error: 'Booking not found' }
 
   // Owner's branch (for authorization + validating member ids).
@@ -68,15 +73,41 @@ export async function updateBooking(
     if (start && end) {
       const { data: overlapping } = await admin
         .from('bookings')
-        .select('id, rooms_requested')
+        .select('id, rooms_requested, booking_type, guest_count')
         .in('status', ['pending', 'confirmed'])
         .neq('id', bookingId)
         .lte('start_date', end)
         .gte('end_date', start)
-      const clash = ((overlapping ?? []) as { id: string; rooms_requested: string[] }[])
-        .some(b => roomsConflict(rooms, b.rooms_requested))
-      if (clash) {
-        return { success: false, error: 'One or more of those rooms is already booked for these dates.' }
+      type Ov = { id: string; rooms_requested: string[]; booking_type: BookingType; guest_count: number }
+      const ovBookings = (overlapping ?? []) as Ov[]
+
+      const party = payload.guestCount ?? booking.guest_count
+      const sharedEdit = !EXCLUSIVE_TYPES.includes(booking.booking_type)
+
+      if (!sharedEdit) {
+        // Exclusive: the whole room must be free.
+        const clash = ovBookings.some(b => roomsConflict(rooms, b.rooms_requested))
+        if (clash) return { success: false, error: 'One or more of those rooms is already booked for these dates.' }
+      } else {
+        // Shared: may co-exist up to each room's capacity (beds + flex).
+        const { data: roomCaps } = await admin
+          .from('rooms').select('id, name, max_occupancy, flex_capacity').in('id', rooms)
+        type RoomCap = { id: string; name: string; max_occupancy: number; flex_capacity: number }
+        const capById = new Map((roomCaps as RoomCap[] ?? []).map(r => [r.id, r]))
+        for (const roomId of rooms) {
+          const occupants = ovBookings.filter(b => b.rooms_requested.includes(roomId))
+          if (occupants.length === 0) continue
+          const cap = capById.get(roomId)
+          const roomName = cap?.name ?? 'That room'
+          if (occupants.some(o => EXCLUSIVE_TYPES.includes(o.booking_type))) {
+            return { success: false, error: `${roomName} is reserved exclusively for those dates.` }
+          }
+          const capacity = (cap?.max_occupancy ?? 0) + (cap?.flex_capacity ?? 0)
+          const used = occupants.reduce((s, o) => s + (o.guest_count ?? 0), 0)
+          if (used + party > capacity) {
+            return { success: false, error: `${roomName} only has ${Math.max(0, capacity - used)} spot(s) left for those dates.` }
+          }
+        }
       }
     }
   }

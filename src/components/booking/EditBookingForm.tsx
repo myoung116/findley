@@ -128,6 +128,7 @@ export function EditBookingForm({ bookingId, bookingType, onSaved }: Props) {
           startDate={startDate} endDate={endDate}
           selectedRoomIds={selectedRoomIds}
           totalGuests={totalParty}
+          bookingType={bookingType}
           excludeBookingId={bookingId}
           onToggleRoom={toggleRoom}
           onCapacityChange={setRoomCapacity}

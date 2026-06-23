@@ -34,8 +34,13 @@ type ConflictRow = {
   start_date: string
   end_date: string
   created_at: string
+  booking_type: BookingType
+  guest_count: number
   users: { name: string; role: string } | null
 }
+
+const EXCLUSIVE_BOOKING_TYPES: BookingType[] = ['exclusive_offseason', 'exclusive_peak']
+function isExclusiveType(t: BookingType) { return EXCLUSIVE_BOOKING_TYPES.includes(t) }
 
 export async function submitBooking(payload: BookingPayload): Promise<SubmitResult> {
   const supabase = await createClient()
@@ -151,7 +156,7 @@ export async function submitBooking(payload: BookingPayload): Promise<SubmitResu
   // Find all overlapping active bookings that share at least one room
   const { data: overlappingRaw } = await supabase
     .from('bookings')
-    .select('id, user_id, rooms_requested, start_date, end_date, created_at, users(name, role)')
+    .select('id, user_id, rooms_requested, start_date, end_date, created_at, booking_type, guest_count, users(name, role)')
     .in('status', ['pending', 'confirmed'])
     .neq('user_id', user.id)
     .lte('start_date', payload.endDate)
@@ -159,6 +164,34 @@ export async function submitBooking(payload: BookingPayload): Promise<SubmitResu
 
   const overlapping = (overlappingRaw ?? []) as ConflictRow[]
   const roomConflicts = overlapping.filter(b => roomsConflict(payload.roomIds, b.rooms_requested))
+
+  // Open/shared & last-minute stays may share a room with other non-exclusive
+  // parties until the room's sleeping capacity (beds + flex) is full. Validate
+  // that up front so two parties can co-exist instead of blocking the room.
+  const isSharedType = !isExclusiveType(payload.bookingType)
+  if (isSharedType && roomConflicts.length > 0) {
+    const { data: roomCaps } = await supabase
+      .from('rooms')
+      .select('id, name, max_occupancy, flex_capacity')
+      .in('id', payload.roomIds)
+    type RoomCap = { id: string; name: string; max_occupancy: number; flex_capacity: number }
+    const capById = new Map((roomCaps as RoomCap[] ?? []).map(r => [r.id, r]))
+
+    for (const roomId of payload.roomIds) {
+      const occupants = roomConflicts.filter(c => c.rooms_requested.includes(roomId))
+      if (occupants.length === 0) continue
+      const cap = capById.get(roomId)
+      const roomName = cap?.name ?? 'That room'
+      if (occupants.some(o => isExclusiveType(o.booking_type))) {
+        return { success: false, error: `${roomName} is reserved exclusively for those dates. Please choose another room.` }
+      }
+      const capacity = (cap?.max_occupancy ?? 0) + (cap?.flex_capacity ?? 0)
+      const used = occupants.reduce((sum, o) => sum + (o.guest_count ?? 0), 0)
+      if (used + payload.guestCount > capacity) {
+        return { success: false, error: `${roomName} only has ${Math.max(0, capacity - used)} spot(s) left for those dates. Please reduce your party or pick another room.` }
+      }
+    }
+  }
 
   // Get submitting principal's current waiver score
   const { data: myScoreData } = await supabase
@@ -258,9 +291,10 @@ export async function submitBooking(payload: BookingPayload): Promise<SubmitResu
   const isSubjectToWaiver = profile.role === 'principal' || profile.role === 'cousin'
   const isPapa = isAdminSubmitter // keep variable name for existing bump block below
 
-  // A cousin booking awaiting principal approval doesn't bump or conflict with
-  // anyone yet — conflict resolution is deferred until the principal approves.
-  for (const conflict of (cousinNeedsApproval ? [] : roomConflicts)) {
+  // Shared stays already passed the capacity check above and simply co-exist —
+  // no bumping. A cousin booking awaiting principal approval also doesn't bump
+  // yet (deferred until approval). Only exclusive blocks fall through to here.
+  for (const conflict of ((cousinNeedsApproval || isSharedType) ? [] : roomConflicts)) {
     const conflictingUserName = conflict.users?.name ?? 'Unknown'
 
     if (isPapa) {

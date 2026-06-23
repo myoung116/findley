@@ -50,9 +50,12 @@ export function buildCalendarGrid(year: number, month: number, bookings: Calenda
 
   return eachDayOfInterval({ start: gridStart, end: gridEnd }).map(date => {
     const dayBookings = bookings.filter(b => {
+      // Checkout day (end date) is exclusive — guests leave at noon, so it's not
+      // an occupied night. Must match DayDetailPanel's filter or pills and the
+      // day detail disagree.
       const start = parseISO(b.startDate)
       const end = parseISO(b.endDate)
-      return isWithinInterval(date, { start, end })
+      return date >= start && date < end
     })
 
     return {
