@@ -212,9 +212,12 @@ function RoomRow({ room, guests }: { room: Room; guests: number }) {
   const capacity = room.max_occupancy + flex
   const fillPct = capacity > 0 ? Math.min(100, Math.round((guests / capacity) * 100)) : 0
   const occupied = guests > 0
-  // Beds are the standard capacity; flex shows as a separate "+N" counter.
-  const capLabel = flex > 0 ? `${room.max_occupancy}+${flex}` : `${room.max_occupancy}`
-  const occLabel = `${guests}/${capLabel}`
+  // Beds are the standard capacity. The flex counter shows how many flex spots
+  // are CURRENTLY used (guests beyond the beds) — not the flex ceiling, which
+  // lives in the expanded details.
+  const bedsUsed = Math.min(guests, room.max_occupancy)
+  const flexUsed = Math.max(0, guests - room.max_occupancy)
+  const occLabel = flex > 0 ? `${bedsUsed}/${room.max_occupancy}+${flexUsed}` : `${guests}/${room.max_occupancy}`
 
   // Colour scheme: empty=green, partial=green, getting full=amber, full/over=red
   const scheme = !occupied
